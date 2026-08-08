@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #17181C;
+  color: #FFFFFF;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(218,178,90,0.25); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(218,178,90,0.45); }
+
+* { scrollbar-width: thin; scrollbar-color: rgba(218,178,90,0.3) transparent; }
+
+.glass {
+  background: rgba(38, 41, 49, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(218,178,90,0.14);
+}
+
+.gold-text {
+  background: linear-gradient(135deg, #DAB25A 0%, #F2D89A 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #24262D 0%, #2D313A 50%, #24262D 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #1D1F24 inset !important;
+  -webkit-text-fill-color: #fff !important;
+}
+/* Remove arrows from number inputs */
+
+/* Chrome, Edge, Safari */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+input,
+textarea,
+select {
+  width: 100%;
+  height: 48px;
+  background: #1a1c22;
+  color: #fff;
+  border: 1px solid rgba(218, 178, 90, 0.25);
+  border-radius: 12px;
+  padding: 0 16px;
+  outline: none;
+  transition: all .2s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8b9099;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #dab25a;
+  box-shadow: 0 0 0 3px rgba(218, 178, 90, 0.15);
+}
