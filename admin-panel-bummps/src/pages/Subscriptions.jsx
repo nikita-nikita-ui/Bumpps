@@ -14,9 +14,8 @@ import {
   HiOutlineCreditCard,
 } from "react-icons/hi";
 
-import { PageHeader, SearchInput, Tabs } from "../components/ui/Controls";
+import { SearchInput, Tabs } from "../components/ui/Controls";
 import GlassCard from "../components/ui/GlassCard";
-import Badge from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import Modal from "../components/ui/Modal";
 
@@ -37,10 +36,6 @@ const emptyForm = {
   features: [],
 };
 
-/* =========================================================
-   Stat Card
-========================================================= */
-
 const StatCard = ({
   title,
   value,
@@ -58,16 +53,14 @@ const StatCard = ({
       <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gold/[0.05] blur-2xl transition group-hover:bg-gold/[0.10]" />
 
       <div className="relative flex items-start justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-medium text-ink-muted">{title}</p>
 
           <h2 className="mt-2 max-w-[180px] truncate font-display text-3xl font-bold tracking-tight text-white">
             {value}
           </h2>
 
-          <p className="mt-2 text-[11px] text-ink-faint">
-            {description}
-          </p>
+          <p className="mt-2 text-[11px] text-ink-faint">{description}</p>
         </div>
 
         <div
@@ -80,29 +73,17 @@ const StatCard = ({
   </motion.div>
 );
 
-/* =========================================================
-   Subscription Page
-========================================================= */
-
 export default function Subscriptions() {
   const [plans, setPlans] = useState([]);
-
   const [tab, setTab] = useState("All");
   const [search, setSearch] = useState("");
-
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(null);
-
   const [form, setForm] = useState(emptyForm);
-
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  /* =========================================================
-     Fetch
-  ========================================================= */
 
   const fetchPlans = async () => {
     try {
@@ -110,14 +91,10 @@ export default function Subscriptions() {
       setError("");
 
       const res = await getAllPlans();
-
       setPlans(res.data?.plans || []);
-    } catch (error) {
-      console.error(error);
-
+    } catch (err) {
       setError(
-        error.response?.data?.message ||
-          "Failed to fetch subscription plans."
+        err.response?.data?.message || "Failed to fetch subscription plans."
       );
     } finally {
       setLoading(false);
@@ -128,19 +105,12 @@ export default function Subscriptions() {
     fetchPlans();
   }, []);
 
-  /* =========================================================
-     Stats
-  ========================================================= */
-
-  const popularCount = plans.filter(
-    (plan) => plan.isPopular
-  ).length;
+  const popularCount = plans.filter((plan) => plan.isPopular).length;
 
   const averageMonthly =
     plans.length > 0
       ? plans.reduce(
-          (sum, plan) =>
-            sum + Number(plan.prices?.monthly || 0),
+          (sum, plan) => sum + Number(plan.prices?.monthly || 0),
           0
         ) / plans.length
       : 0;
@@ -150,51 +120,30 @@ export default function Subscriptions() {
     0
   );
 
-  /* =========================================================
-     Filter
-  ========================================================= */
-
   const filteredPlans = useMemo(() => {
-    return plans
-      .filter((plan) => {
-        if (tab === "Popular") return plan.isPopular;
-        return true;
-      })
-      .filter((plan) => {
-        const value = search.toLowerCase();
+    const value = search.trim().toLowerCase();
 
-        return (
+    return plans
+      .filter((plan) => (tab === "Popular" ? plan.isPopular : true))
+      .filter(
+        (plan) =>
+          !value ||
           plan.name?.toLowerCase().includes(value) ||
           plan.subtitle?.toLowerCase().includes(value)
-        );
-      });
+      );
   }, [plans, tab, search]);
-
-  /* =========================================================
-     Create
-  ========================================================= */
 
   const openCreate = () => {
     setError("");
-
-    setForm({
-      ...emptyForm,
-      features: [],
-    });
-
+    setForm({ ...emptyForm, features: [] });
     setCreating(true);
   };
-
-  /* =========================================================
-     Edit
-  ========================================================= */
 
   const openEdit = async (plan) => {
     try {
       setError("");
 
       const res = await getPlanById(plan._id);
-
       const data = res.data?.plan || res.data;
 
       setEditing(data);
@@ -210,19 +159,12 @@ export default function Subscriptions() {
           included: feature.included ?? true,
         })),
       });
-    } catch (error) {
-      console.error(error);
-
+    } catch (err) {
       setError(
-        error.response?.data?.message ||
-          "Failed to load plan details."
+        err.response?.data?.message || "Failed to load plan details."
       );
     }
   };
-
-  /* =========================================================
-     Form
-  ========================================================= */
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -242,10 +184,7 @@ export default function Subscriptions() {
         text: value,
       };
 
-      return {
-        ...prev,
-        features,
-      };
+      return { ...prev, features };
     });
   };
 
@@ -258,10 +197,7 @@ export default function Subscriptions() {
         included: checked,
       };
 
-      return {
-        ...prev,
-        features,
-      };
+      return { ...prev, features };
     });
   };
 
@@ -281,15 +217,25 @@ export default function Subscriptions() {
   const removeFeature = (index) => {
     setForm((prev) => ({
       ...prev,
-      features: prev.features.filter(
-        (_, i) => i !== index
-      ),
+      features: prev.features.filter((_, i) => i !== index),
     }));
   };
 
-  /* =========================================================
-     Create API
-  ========================================================= */
+  const buildPayload = () => ({
+    name: form.name.trim(),
+    subtitle: form.subtitle.trim(),
+    prices: {
+      monthly: Number(form.monthly || 0),
+      annual: Number(form.annual || 0),
+    },
+    features: form.features
+      .filter((feature) => feature.text.trim())
+      .map((feature) => ({
+        text: feature.text.trim(),
+        included: Boolean(feature.included),
+      })),
+    isPopular: Boolean(form.isPopular),
+  });
 
   const saveCreate = async () => {
     try {
@@ -301,91 +247,48 @@ export default function Subscriptions() {
         return;
       }
 
-      const payload = {
-        name: form.name.trim(),
-        subtitle: form.subtitle.trim(),
-
-        prices: {
-          monthly: Number(form.monthly),
-          annual: Number(form.annual),
-        },
-
-        features: form.features
-          .filter((feature) => feature.text.trim())
-          .map((feature) => ({
-            text: feature.text.trim(),
-            included: Boolean(feature.included),
-          })),
-
-        isPopular: Boolean(form.isPopular),
-      };
-
-      await createPlan(payload);
-
+      await createPlan(buildPayload());
       await fetchPlans();
 
       setCreating(false);
       setForm(emptyForm);
-    } catch (error) {
-      console.error(error);
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to create plan."
-      );
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to create plan.");
     } finally {
       setSaving(false);
     }
   };
-
-  /* =========================================================
-     Update API
-  ========================================================= */
 
   const saveEdit = async () => {
     try {
       setSaving(true);
       setError("");
 
-      const payload = {
+      await updatePlan(editing._id, {
         subtitle: form.subtitle.trim(),
-
         prices: {
-          monthly: Number(form.monthly),
-          annual: Number(form.annual),
+          monthly: Number(form.monthly || 0),
+          annual: Number(form.annual || 0),
         },
-
         features: form.features
           .filter((feature) => feature.text.trim())
           .map((feature) => ({
             text: feature.text.trim(),
             included: Boolean(feature.included),
           })),
-
         isPopular: Boolean(form.isPopular),
-      };
-
-      await updatePlan(editing._id, payload);
+      });
 
       await fetchPlans();
 
       setEditing(null);
       setForm(emptyForm);
-    } catch (error) {
-      console.error(error);
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to update plan."
-      );
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update plan.");
     } finally {
       setSaving(false);
     }
   };
-
-  /* =========================================================
-     Delete
-  ========================================================= */
 
   const confirmDelete = async () => {
     try {
@@ -393,25 +296,15 @@ export default function Subscriptions() {
       setError("");
 
       await deletePlan(deleting._id);
-
       await fetchPlans();
 
       setDeleting(null);
-    } catch (error) {
-      console.error(error);
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to delete plan."
-      );
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete plan.");
     } finally {
       setSaving(false);
     }
   };
-
-  /* =========================================================
-     Form UI
-  ========================================================= */
 
   const inputClass =
     "w-full rounded-xl border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-sm text-white placeholder:text-ink-faint outline-none transition focus:border-gold/40 focus:bg-gold/[0.035] focus:ring-2 focus:ring-gold/10";
@@ -503,10 +396,7 @@ export default function Subscriptions() {
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-white">
-              Popular Plan
-            </p>
-
+            <p className="text-sm font-semibold text-white">Popular Plan</p>
             <p className="text-[10px] text-ink-faint">
               Highlight this plan for users
             </p>
@@ -525,10 +415,7 @@ export default function Subscriptions() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-white">
-              Features
-            </p>
-
+            <p className="text-sm font-semibold text-white">Features</p>
             <p className="mt-0.5 text-[10px] text-ink-faint">
               Add benefits included in this plan
             </p>
@@ -557,10 +444,7 @@ export default function Subscriptions() {
                 placeholder="Feature description"
                 value={feature.text}
                 onChange={(e) =>
-                  handleFeatureChange(
-                    index,
-                    e.target.value
-                  )
+                  handleFeatureChange(index, e.target.value)
                 }
                 className={`${inputClass} min-w-0 flex-1 py-2.5`}
               />
@@ -570,10 +454,7 @@ export default function Subscriptions() {
                   type="checkbox"
                   checked={feature.included}
                   onChange={(e) =>
-                    handleFeatureIncluded(
-                      index,
-                      e.target.checked
-                    )
+                    handleFeatureIncluded(index, e.target.checked)
                   }
                   className="h-4 w-4 accent-[#E8C15B]"
                 />
@@ -581,9 +462,7 @@ export default function Subscriptions() {
 
               <button
                 type="button"
-                onClick={() =>
-                  removeFeature(index)
-                }
+                onClick={() => removeFeature(index)}
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 transition hover:bg-red-500/20"
               >
                 <HiOutlineX />
@@ -626,18 +505,9 @@ export default function Subscriptions() {
     </div>
   );
 
-  /* =========================================================
-     Render
-  ========================================================= */
-
   return (
     <div className="px-4 pb-6 pt-0 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-
-        {/* =================================================
-            Header
-        ================================================= */}
-
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -662,9 +532,8 @@ export default function Subscriptions() {
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-                Manage BUMMPS membership plans, pricing,
-                premium benefits, and featured subscription
-                tiers.
+                Manage BUMMPS membership plans, pricing, premium benefits,
+                and featured subscription tiers.
               </p>
             </div>
 
@@ -684,17 +553,12 @@ export default function Subscriptions() {
           </div>
         </motion.div>
 
-        {/* =================================================
-            Stats
-        ================================================= */}
-
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Total Plans"
             value={plans.length}
             description="Available membership tiers"
             icon={HiOutlineCollection}
-            iconClass="text-gold"
             delay={0.05}
           />
 
@@ -726,26 +590,17 @@ export default function Subscriptions() {
           />
         </div>
 
-        {/* =================================================
-            Main Section
-        ================================================= */}
-
         <GlassCard className="overflow-hidden">
-
-          {/* Section Header */}
-
           <div className="border-b border-gold/[0.08] p-5 sm:p-6">
-
             <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-
               <div>
                 <h2 className="font-display text-lg font-bold text-white">
                   Membership Plans
                 </h2>
 
                 <p className="mt-1 text-xs text-ink-muted">
-                  Review, edit, and manage subscription
-                  plans available to BUMMPS users.
+                  Review, edit, and manage subscription plans available to
+                  BUMMPS users.
                 </p>
               </div>
 
@@ -755,11 +610,9 @@ export default function Subscriptions() {
                 placeholder="Search plans..."
                 className="w-full sm:w-72"
               />
-
             </div>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
               <Tabs
                 tabs={["All", "Popular"]}
                 active={tab}
@@ -773,16 +626,10 @@ export default function Subscriptions() {
                 </span>{" "}
                 plans
               </div>
-
             </div>
           </div>
 
-          {/* =================================================
-              Cards
-          ================================================= */}
-
           <div className="p-5 sm:p-6">
-
             {loading ? (
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {[1, 2, 3].map((item) => (
@@ -794,27 +641,13 @@ export default function Subscriptions() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-
                 {filteredPlans.map((plan, index) => (
                   <motion.div
                     key={plan._id}
-                    initial={{
-                      opacity: 0,
-                      y: 15,
-                    }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                    }}
-                    transition={{
-                      delay: index * 0.06,
-                    }}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.06 }}
                   >
-
-                    {/* =================================================
-                        SAME SIZE CARD
-                    ================================================= */}
-
                     <div
                       className={`group relative flex h-[440px] flex-col overflow-hidden rounded-2xl border p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-soft ${
                         plan.isPopular
@@ -822,12 +655,7 @@ export default function Subscriptions() {
                           : "border-gold/[0.12] bg-card/60 hover:border-gold/30"
                       }`}
                     >
-
-                      {/* Glow */}
-
                       <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-gold/[0.08] blur-3xl" />
-
-                      {/* Popular */}
 
                       {plan.isPopular && (
                         <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-gold-gradient px-2.5 py-1 text-[8px] font-bold uppercase tracking-wider text-black">
@@ -836,12 +664,8 @@ export default function Subscriptions() {
                         </div>
                       )}
 
-                      {/* Top */}
-
                       <div className="relative flex items-start justify-between">
-
-                        <div className="flex items-center gap-3">
-
+                        <div className="flex min-w-0 items-center gap-3">
                           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-gold/[0.14] bg-gold/[0.08] text-xl text-gold">
                             <HiOutlineStar />
                           </div>
@@ -852,33 +676,22 @@ export default function Subscriptions() {
                             </p>
 
                             <p className="mt-0.5 max-w-[150px] truncate text-[11px] text-ink-faint">
-                              {plan.subtitle ||
-                                "Premium membership"}
+                              {plan.subtitle || "Premium membership"}
                             </p>
                           </div>
-
                         </div>
-
                       </div>
-
-                      {/* Divider */}
 
                       <div className="my-4 h-px bg-white/[0.05]" />
 
-                      {/* Pricing */}
-
                       <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-4">
-
                         <p className="text-[9px] uppercase tracking-wider text-ink-faint">
                           Monthly Price
                         </p>
 
                         <div className="mt-1 flex items-end gap-1">
                           <span className="font-display text-3xl font-extrabold text-white">
-                            $
-                            {Number(
-                              plan.prices?.monthly || 0
-                            ).toFixed(0)}
+                            ${Number(plan.prices?.monthly || 0).toFixed(0)}
                           </span>
 
                           <span className="mb-1 text-[11px] text-ink-faint">
@@ -892,174 +705,125 @@ export default function Subscriptions() {
                           </span>
 
                           <span className="text-xs font-semibold text-gold">
-                            $
-                            {Number(
-                              plan.prices?.annual || 0
-                            ).toFixed(2)}
+                            ${Number(plan.prices?.annual || 0).toFixed(2)}
                           </span>
                         </div>
-
                       </div>
 
-                      {/* Features */}
-
-                      <div className="mt-4 flex-1 min-h-0">
-
+                      <div className="mt-4 min-h-0 flex-1">
                         <div className="mb-3 flex items-center justify-between">
                           <p className="text-[9px] uppercase tracking-wider text-ink-faint">
                             Plan Benefits
                           </p>
 
                           <span className="text-[9px] text-gold">
-                            {plan.features?.length || 0}{" "}
-                            features
+                            {plan.features?.length || 0} features
                           </span>
                         </div>
 
                         <div className="max-h-[135px] overflow-hidden">
-
                           <ul className="space-y-2.5">
                             {(plan.features || [])
                               .slice(0, 5)
-                              .map(
-                                (
-                                  feature,
-                                  featureIndex
-                                ) => (
-                                  <li
-                                    key={
-                                      feature._id ||
-                                      featureIndex
-                                    }
-                                    className={`flex items-start gap-2 text-xs ${
+                              .map((feature, featureIndex) => (
+                                <li
+                                  key={feature._id || featureIndex}
+                                  className={`flex items-start gap-2 text-xs ${
+                                    feature.included
+                                      ? "text-ink-muted"
+                                      : "text-ink-faint line-through"
+                                  }`}
+                                >
+                                  <span
+                                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
                                       feature.included
-                                        ? "text-ink-muted"
-                                        : "text-ink-faint line-through"
+                                        ? "bg-gold/10 text-gold"
+                                        : "bg-white/[0.04] text-ink-faint"
                                     }`}
                                   >
-                                    <span
-                                      className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
-                                        feature.included
-                                          ? "bg-gold/10 text-gold"
-                                          : "bg-white/[0.04] text-ink-faint"
-                                      }`}
-                                    >
-                                      <HiOutlineCheck className="text-[9px]" />
-                                    </span>
+                                    <HiOutlineCheck className="text-[9px]" />
+                                  </span>
 
-                                    <span className="line-clamp-1">
-                                      {feature.text}
-                                    </span>
-                                  </li>
-                                )
-                              )}
+                                  <span className="line-clamp-1">
+                                    {feature.text}
+                                  </span>
+                                </li>
+                              ))}
                           </ul>
-
                         </div>
 
                         {plan.features?.length > 5 && (
                           <p className="mt-2 text-[10px] text-gold">
-                            +{" "}
-                            {plan.features.length - 5}{" "}
-                            more benefits
+                            + {plan.features.length - 5} more benefits
                           </p>
                         )}
-
                       </div>
 
-                      {/* Footer */}
-
                       <div className="mt-4 border-t border-white/[0.06] pt-4">
-
                         <div className="flex items-center justify-between text-[10px]">
-
-                          <span className="text-ink-faint">
-                            Plan status
-                          </span>
+                          <span className="text-ink-faint">Plan status</span>
 
                           <span className="flex items-center gap-1.5 font-semibold text-emerald-400">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                             Active
                           </span>
-
                         </div>
 
-                        {/* Actions */}
-
                         <div className="mt-3 flex gap-2">
-
                           <Button
                             variant="outline"
                             size="sm"
                             icon={HiOutlinePencil}
-                            onClick={() =>
-                              openEdit(plan)
-                            }
+                            onClick={() => openEdit(plan)}
                             className="flex-1"
                           >
                             Edit
                           </Button>
 
                           <button
+                            type="button"
                             title="Delete plan"
-                            onClick={() =>
-                              setDeleting(plan)
-                            }
+                            onClick={() => setDeleting(plan)}
                             className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-red-500/30 bg-red-500/10 text-red-400 transition-all hover:scale-110 hover:bg-red-500/20"
                           >
                             <HiOutlineTrash />
                           </button>
-
                         </div>
-
                       </div>
-
                     </div>
-
                   </motion.div>
                 ))}
-
               </div>
             )}
 
-            {/* Empty */}
-
-            {!loading &&
-              filteredPlans.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20">
-
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-gold/[0.14] bg-gold/[0.06] text-2xl text-gold">
-                    <HiOutlineSearch />
-                  </div>
-
-                  <p className="text-sm font-semibold text-white">
-                    No subscription plans
-                  </p>
-
-                  <p className="mt-1 text-xs text-ink-faint">
-                    Try changing your search or filter.
-                  </p>
-
-                  <div className="mt-5">
-                    <Button
-                      variant="primary"
-                      icon={HiOutlinePlus}
-                      onClick={openCreate}
-                    >
-                      Add Plan
-                    </Button>
-                  </div>
-
+            {!loading && filteredPlans.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-gold/[0.14] bg-gold/[0.06] text-2xl text-gold">
+                  <HiOutlineSearch />
                 </div>
-              )}
 
+                <p className="text-sm font-semibold text-white">
+                  No subscription plans
+                </p>
+
+                <p className="mt-1 text-xs text-ink-faint">
+                  Try changing your search or filter.
+                </p>
+
+                <div className="mt-5">
+                  <Button
+                    variant="primary"
+                    icon={HiOutlinePlus}
+                    onClick={openCreate}
+                  >
+                    Add Plan
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </GlassCard>
       </div>
-
-      {/* =====================================================
-          Create Modal
-      ===================================================== */}
 
       <Modal
         open={creating}
@@ -1075,10 +839,6 @@ export default function Subscriptions() {
         {renderForm(false)}
       </Modal>
 
-      {/* =====================================================
-          Edit Modal
-      ===================================================== */}
-
       <Modal
         open={!!editing}
         onClose={() => {
@@ -1093,10 +853,6 @@ export default function Subscriptions() {
         {renderForm(true)}
       </Modal>
 
-      {/* =====================================================
-          Delete Modal
-      ===================================================== */}
-
       <Modal
         open={!!deleting}
         onClose={() => {
@@ -1108,7 +864,6 @@ export default function Subscriptions() {
         maxWidth="max-w-sm"
       >
         <div className="text-center">
-
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-2xl text-red-400">
             <HiOutlineTrash />
           </div>
@@ -1124,11 +879,9 @@ export default function Subscriptions() {
             </span>
             ? This action cannot be undone.
           </p>
-
         </div>
 
         <div className="mt-6 flex gap-3">
-
           <Button
             variant="danger"
             className="flex-1"
@@ -1146,7 +899,6 @@ export default function Subscriptions() {
           >
             Cancel
           </Button>
-
         </div>
       </Modal>
     </div>

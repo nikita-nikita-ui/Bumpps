@@ -137,8 +137,7 @@ const dummyReports = [
 
 const typeFilter = {
   "All Reports": () => true,
-  Abuse: (r) =>
-    r.type === "Abuse" || r.type === "Harassment",
+  Abuse: (r) => r.type === "Abuse" || r.type === "Harassment",
   Spam: (r) => r.type === "Spam",
   "Fake Profiles": (r) => r.type === "Fake Profile",
 };
@@ -153,17 +152,11 @@ const StatCard = ({
   <div className="rounded-card border border-gold/[0.14] bg-card/70 p-5 shadow-soft backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-gold/30">
     <div className="flex items-start justify-between">
       <div>
-        <p className="text-xs font-medium text-ink-muted">
-          {title}
-        </p>
-
+        <p className="text-xs font-medium text-ink-muted">{title}</p>
         <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
           {value.toLocaleString()}
         </h2>
-
-        <p className="mt-2 text-[11px] text-ink-faint">
-          {description}
-        </p>
+        <p className="mt-2 text-[11px] text-ink-faint">{description}</p>
       </div>
 
       <div
@@ -190,12 +183,8 @@ export default function Reports() {
         if (!query) return true;
 
         return (
-          r.reported.name
-            .toLowerCase()
-            .includes(query) ||
-          r.reporter.name
-            .toLowerCase()
-            .includes(query) ||
+          r.reported.name.toLowerCase().includes(query) ||
+          r.reporter.name.toLowerCase().includes(query) ||
           r.id.toLowerCase().includes(query) ||
           r.type.toLowerCase().includes(query)
         );
@@ -205,15 +194,9 @@ export default function Reports() {
   const stats = useMemo(
     () => ({
       total: data.length,
-      pending: data.filter(
-        (r) => r.status === "Pending"
-      ).length,
-      resolved: data.filter(
-        (r) => r.status === "Resolved"
-      ).length,
-      rejected: data.filter(
-        (r) => r.status === "Rejected"
-      ).length,
+      pending: data.filter((r) => r.status === "Pending").length,
+      resolved: data.filter((r) => r.status === "Resolved").length,
+      rejected: data.filter((r) => r.status === "Rejected").length,
     }),
     [data]
   );
@@ -238,22 +221,14 @@ export default function Reports() {
       key: "id",
       header: "Report ID",
       render: (r) => (
-        <span className="font-mono text-xs text-ink-muted">
-          {r.id}
-        </span>
+        <span className="font-mono text-xs text-ink-muted">{r.id}</span>
       ),
     },
-
     {
       key: "type",
       header: "Type",
-      render: (r) => (
-        <Badge tone="gold">
-          {r.type}
-        </Badge>
-      ),
+      render: (r) => <Badge tone="gold">{r.type}</Badge>,
     },
-
     {
       key: "reported",
       header: "Reported User",
@@ -266,18 +241,12 @@ export default function Reports() {
           />
 
           <div>
-            <p className="font-semibold text-white">
-              {r.reported.name}
-            </p>
-
-            <p className="text-[10px] text-ink-faint">
-              Reported user
-            </p>
+            <p className="font-semibold text-white">{r.reported.name}</p>
+            <p className="text-[10px] text-ink-faint">Reported user</p>
           </div>
         </div>
       ),
     },
-
     {
       key: "reporter",
       header: "Reported By",
@@ -290,41 +259,28 @@ export default function Reports() {
           />
 
           <div>
-            <p className="font-medium text-ink-muted">
-              {r.reporter.name}
-            </p>
-
-            <p className="text-[10px] text-ink-faint">
-              Reporter
-            </p>
+            <p className="font-medium text-ink-muted">{r.reporter.name}</p>
+            <p className="text-[10px] text-ink-faint">Reporter</p>
           </div>
         </div>
       ),
     },
-
     {
       key: "date",
       header: "Date",
       render: (r) => (
-        <span className="text-sm text-ink-muted">
-          {r.date}
-        </span>
+        <span className="text-sm text-ink-muted">{r.date}</span>
       ),
     },
-
     {
       key: "status",
       header: "Status",
       render: (r) => (
-        <Badge
-          tone={statusTone(r.status)}
-          dot
-        >
+        <Badge tone={statusTone(r.status)} dot>
           {r.status}
         </Badge>
       ),
     },
-
     {
       key: "actions",
       header: "Actions",
@@ -343,13 +299,11 @@ export default function Reports() {
   return (
     <div className="px-4 pb-4 pt-0 text-white sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-
         <div className="relative overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 p-6 shadow-soft backdrop-blur-xl sm:p-8">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
-
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
                   Moderation Center
                 </span>
@@ -364,9 +318,8 @@ export default function Reports() {
               </h1>
 
               <p className="mt-2 max-w-xl text-sm text-ink-muted">
-                Review reported users, investigate complaints
-                and manage moderation decisions across the
-                BUMMPS platform.
+                Review reported users, investigate complaints and manage
+                moderation decisions across the BUMMPS platform.
               </p>
             </div>
 
@@ -410,9 +363,7 @@ export default function Reports() {
         </div>
 
         <div className="overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 shadow-soft backdrop-blur-xl">
-
           <div className="border-b border-gold/[0.08] p-5 sm:p-6">
-
             <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
               <div>
                 <h2 className="font-display text-lg font-bold text-white">
@@ -464,11 +415,7 @@ export default function Reports() {
                 </p>
               </div>
             ) : (
-              <DataTable
-                columns={columns}
-                data={filtered}
-                pageSize={8}
-              />
+              <DataTable columns={columns} data={filtered} pageSize={8} />
             )}
           </div>
         </div>
@@ -480,26 +427,19 @@ export default function Reports() {
         >
           {view && (
             <div className="space-y-5">
-
               <div className="flex items-center gap-2">
                 <div className="grid h-9 w-9 place-items-center rounded-xl border border-danger/20 bg-danger/10 text-danger">
                   <HiOutlineFlag />
                 </div>
 
-                <Badge tone="gold">
-                  {view.type}
-                </Badge>
+                <Badge tone="gold">{view.type}</Badge>
 
-                <Badge
-                  tone={statusTone(view.status)}
-                  className="ml-auto"
-                >
+                <Badge tone={statusTone(view.status)} className="ml-auto">
                   {view.status}
                 </Badge>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-
                 <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-center">
                   <img
                     src={view.reporter.avatar}
@@ -531,7 +471,6 @@ export default function Reports() {
                     {view.reported.name}
                   </p>
                 </div>
-
               </div>
 
               <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
@@ -550,9 +489,7 @@ export default function Reports() {
                     variant="success"
                     className="flex-1"
                     icon={HiOutlineCheck}
-                    onClick={() =>
-                      resolve(view.id, "Resolved")
-                    }
+                    onClick={() => resolve(view.id, "Resolved")}
                   >
                     Resolve
                   </Button>
@@ -561,9 +498,7 @@ export default function Reports() {
                     variant="danger"
                     className="flex-1"
                     icon={HiOutlineX}
-                    onClick={() =>
-                      resolve(view.id, "Rejected")
-                    }
+                    onClick={() => resolve(view.id, "Rejected")}
                   >
                     Reject
                   </Button>

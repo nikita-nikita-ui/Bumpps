@@ -152,10 +152,6 @@ const dashboardData = {
   },
 };
 
-/* =========================================================
-   Theme Components
-========================================================= */
-
 const Card = ({ children, className = "" }) => (
   <div
     className={`rounded-card border border-gold/[0.14] bg-card/70 backdrop-blur-xl shadow-soft ${className}`}
@@ -167,10 +163,8 @@ const Card = ({ children, className = "" }) => (
 const Badge = ({ children, type = "gold" }) => {
   const styles = {
     gold: "bg-gold/10 text-gold border-gold/20",
-    green:
-      "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    yellow:
-      "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+    green: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+    yellow: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
     red: "bg-red-500/10 text-red-400 border-red-500/20",
   };
 
@@ -184,20 +178,10 @@ const Badge = ({ children, type = "gold" }) => {
 };
 
 const statusType = (status) => {
-  if (status === "Verified" || status === "Active") {
-    return "green";
-  }
-
-  if (status === "Pending") {
-    return "yellow";
-  }
-
+  if (status === "Verified" || status === "Active") return "green";
+  if (status === "Pending") return "yellow";
   return "gold";
 };
-
-/* =========================================================
-   Dashboard
-========================================================= */
 
 export default function Dashboard() {
   const [period, setPeriod] = useState("Monthly");
@@ -218,11 +202,6 @@ export default function Dashboard() {
   return (
     <div className="px-4 pb-4 pt-2 text-white sm:px-6 sm:pb-6 sm:pt-3 lg:px-8 lg:pb-8 lg:pt-3">
       <div className="mx-auto max-w-[1600px] space-y-6">
-
-        {/* =================================================
-            Welcome Header
-        ================================================= */}
-
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -232,7 +211,6 @@ export default function Dashboard() {
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
-
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
                   Platform Online
                 </span>
@@ -264,10 +242,6 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
-
-        {/* =================================================
-            Stats
-        ================================================= */}
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {dashboardData.stats.map((stat, index) => {
@@ -313,14 +287,7 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* =================================================
-            Growth + Activity
-        ================================================= */}
-
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-
-          {/* User Growth */}
-
           <Card className="p-5 sm:p-6 xl:col-span-2">
             <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <div>
@@ -382,8 +349,6 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* Recent Activity */}
-
           <Card className="p-5 sm:p-6">
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -437,14 +402,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* =================================================
-            Registrations + Gender
-        ================================================= */}
-
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-
-          {/* Latest Registrations */}
-
           <Card className="overflow-hidden xl:col-span-2">
             <div className="flex items-center justify-between border-b border-gold/[0.08] p-5 sm:p-6">
               <div>
@@ -469,15 +427,12 @@ export default function Dashboard() {
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
                       User
                     </th>
-
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
                       Location
                     </th>
-
                     <th className="px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
                       Status
                     </th>
-
                     <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
                       Action
                     </th>
@@ -532,8 +487,6 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          {/* Gender Split */}
-
           <Card className="p-5 sm:p-6">
             <div className="mb-6 flex items-center justify-between">
               <div>
@@ -572,10 +525,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-gold" />
-
-                  <span className="text-sm text-ink-muted">
-                    Male
-                  </span>
+                  <span className="text-sm text-ink-muted">Male</span>
                 </div>
 
                 <span className="text-sm font-semibold text-white">
@@ -589,10 +539,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-white/30" />
-
-                  <span className="text-sm text-ink-muted">
-                    Female
-                  </span>
+                  <span className="text-sm text-ink-muted">Female</span>
                 </div>
 
                 <span className="text-sm font-semibold text-white">
@@ -605,10 +552,6 @@ export default function Dashboard() {
             </div>
           </Card>
         </div>
-
-        {/* =================================================
-            Pending Verifications
-        ================================================= */}
 
         <Card className="p-5 sm:p-6">
           <div className="mb-6 flex items-center justify-between">

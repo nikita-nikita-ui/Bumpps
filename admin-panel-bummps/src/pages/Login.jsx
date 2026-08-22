@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-
 import {
   HiOutlineMail,
   HiOutlineLockClosed,
@@ -9,7 +8,6 @@ import {
   HiOutlineEyeOff,
   HiArrowRight,
 } from "react-icons/hi";
-
 import { loginAdmin } from "../services/Apis/auth";
 import logo from "../assets/img.png";
 
@@ -26,18 +24,15 @@ export default function Login() {
   const validate = () => {
     const e = {};
 
-    // Email validation
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       e.email = "Enter a valid email address";
     }
 
-    // Password validation
     if (!password || password.length < 6) {
       e.password = "Password must be at least 6 characters";
     }
 
     setErrors(e);
-
     return Object.keys(e).length === 0;
   };
 
@@ -49,32 +44,24 @@ export default function Login() {
     try {
       setLoading(true);
 
-      console.log("Login Request:", {
-        email,
-        password,
-      });
-
       const res = await loginAdmin({
         email,
         password,
       });
 
-      console.log("Login Response:", res);
-
-      // Save login preference if Remember Me is checked
       if (remember) {
         localStorage.setItem("rememberAdmin", "true");
       } else {
         localStorage.removeItem("rememberAdmin");
       }
 
-      // Navigate to dashboard
+      if (res?.token) {
+        localStorage.setItem("token", res.token);
+      }
+
       navigate("/");
     } catch (error) {
       console.error("Login Error:", error);
-
-      console.log("Status:", error.response?.status);
-      console.log("Response:", error.response?.data);
 
       alert(
         error.response?.data?.message ||
@@ -88,9 +75,7 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#17181C] px-4">
-      {/* ================= BACKGROUND ================= */}
       <div className="absolute inset-0">
-        {/* Gold Glow - Top Left */}
         <motion.div
           animate={{
             scale: [1, 1.15, 1],
@@ -104,7 +89,6 @@ export default function Login() {
           className="absolute -left-1/4 -top-1/4 h-[900px] w-[900px] rounded-full bg-gradient-to-br from-gold/20 via-gold/5 to-transparent blur-[100px]"
         />
 
-        {/* Gold Glow - Bottom Right */}
         <motion.div
           animate={{
             scale: [1.1, 1, 1.1],
@@ -118,7 +102,6 @@ export default function Login() {
           className="absolute -bottom-1/3 -right-1/4 h-[800px] w-[800px] rounded-full bg-gradient-to-tl from-[#F2D89A]/15 via-gold/5 to-transparent blur-[110px]"
         />
 
-        {/* Grid */}
         <div
           className="absolute inset-0 opacity-[0.035]"
           style={{
@@ -128,10 +111,8 @@ export default function Login() {
           }}
         />
 
-        {/* Bottom Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#17181C]/40 to-[#17181C]" />
 
-        {/* Floating Dots */}
         {Array.from({ length: 10 }).map((_, i) => (
           <motion.div
             key={i}
@@ -156,7 +137,6 @@ export default function Login() {
         ))}
       </div>
 
-      {/* ================= LOGIN CARD ================= */}
       <motion.div
         initial={{
           opacity: 0,
@@ -172,9 +152,7 @@ export default function Login() {
         }}
         className="relative w-full max-w-[420px] rounded-card border border-gold/[0.18] bg-card/60 p-8 backdrop-blur-2xl shadow-lift sm:p-10"
       >
-        {/* ================= HEADER ================= */}
         <div className="mb-8 flex flex-col items-center text-center">
-          {/* BUMMPS LOGO */}
           <div className="mb-6 flex items-center justify-center">
             <img
               src={logo}
@@ -192,9 +170,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* ================= FORM ================= */}
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          {/* ================= EMAIL ================= */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
               Email
@@ -248,7 +224,6 @@ export default function Login() {
             </AnimatePresence>
           </div>
 
-          {/* ================= PASSWORD ================= */}
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
               Password
@@ -278,7 +253,6 @@ export default function Login() {
                 }`}
               />
 
-              {/* Show / Hide Password */}
               <button
                 type="button"
                 onClick={() => setShowPass((value) => !value)}
@@ -316,7 +290,6 @@ export default function Login() {
             </AnimatePresence>
           </div>
 
-          {/* ================= REMEMBER / FORGOT ================= */}
           <div className="flex items-center justify-between text-xs">
             <label className="flex cursor-pointer items-center gap-2 text-ink-muted">
               <input
@@ -325,22 +298,18 @@ export default function Login() {
                 onChange={(e) => setRemember(e.target.checked)}
                 className="h-3.5 w-3.5 accent-[#DAB25A]"
               />
-
               <span>Remember me</span>
             </label>
 
             <button
               type="button"
-              onClick={() => {
-                console.log("Forgot password clicked");
-              }}
+              onClick={() => console.log("Forgot password clicked")}
               className="font-semibold text-gold transition-colors hover:text-gold-soft"
             >
               Forgot Password?
             </button>
           </div>
 
-          {/* ================= SIGN IN BUTTON ================= */}
           <motion.button
             type="submit"
             whileTap={{
@@ -365,7 +334,6 @@ export default function Login() {
                   }}
                   className="h-4 w-4 rounded-full border-2 border-[#1D1508]/30 border-t-[#1D1508]"
                 />
-
                 Signing in...
               </>
             ) : (
@@ -377,7 +345,6 @@ export default function Login() {
           </motion.button>
         </form>
 
-        {/* ================= DEMO TEXT ================= */}
         <p className="mt-7 text-center text-xs text-ink-faint">
           Demo access · use any email &amp; a password of 6+ characters
         </p>

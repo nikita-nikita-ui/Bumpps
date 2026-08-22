@@ -1,6 +1,5 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useState } from "react";
-import { userGrowth } from "../../data/ops";
 import GlassCard from "../ui/GlassCard";
 import { Tabs } from "../ui/Controls";
 

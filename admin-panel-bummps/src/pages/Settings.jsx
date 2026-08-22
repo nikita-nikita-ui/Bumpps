@@ -6,14 +6,12 @@ import {
   HiOutlineShieldCheck,
   HiOutlineColorSwatch,
   HiOutlineGlobe,
-  HiOutlineLogout,
   HiOutlineUser,
   HiOutlineCheckCircle,
   HiOutlineDeviceMobile,
 } from "react-icons/hi";
 import { Tabs } from "../components/ui/Controls";
 import Button from "../components/ui/Button";
-import { useNavigate } from "react-router-dom";
 
 const adminData = {
   name: "Admin User",
@@ -30,7 +28,7 @@ const Field = ({ label, ...props }) => (
     </label>
     <input
       {...props}
-      className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition-all placeholder:text-ink-faint focus:border-gold/50 focus:bg-gold/[0.03]"
+      className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition-all placeholder:text-ink-faint focus:border-gold/50 focus:bg-gold/[0.03] disabled:cursor-not-allowed disabled:opacity-50"
     />
   </div>
 );
@@ -88,10 +86,7 @@ const SectionHeader = ({ icon: Icon, title, description }) => (
 );
 
 export default function Settings() {
-  const navigate = useNavigate();
-
   const [tab, setTab] = useState("Profile");
-
   const [profile, setProfile] = useState(adminData);
   const [twoFA, setTwoFA] = useState(true);
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -217,7 +212,9 @@ export default function Settings() {
                   </div>
 
                   <div className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3">
-                    <span className="text-xs text-ink-faint">Account Status</span>
+                    <span className="text-xs text-ink-faint">
+                      Account Status
+                    </span>
                     <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       Active
@@ -237,33 +234,23 @@ export default function Settings() {
                   <Field
                     label="Full Name"
                     value={profile.name}
-                    onChange={(e) =>
-                      updateProfile("name", e.target.value)
-                    }
+                    onChange={(e) => updateProfile("name", e.target.value)}
                   />
 
                   <Field
                     label="Email Address"
                     type="email"
                     value={profile.email}
-                    onChange={(e) =>
-                      updateProfile("email", e.target.value)
-                    }
+                    onChange={(e) => updateProfile("email", e.target.value)}
                   />
 
                   <Field
                     label="Phone Number"
                     value={profile.phone}
-                    onChange={(e) =>
-                      updateProfile("phone", e.target.value)
-                    }
+                    onChange={(e) => updateProfile("phone", e.target.value)}
                   />
 
-                  <Field
-                    label="Role"
-                    value={profile.role}
-                    disabled
-                  />
+                  <Field label="Role" value={profile.role} disabled />
                 </div>
 
                 {saved && (
@@ -427,9 +414,7 @@ export default function Settings() {
                     }`}
                   >
                     <div className="mb-3 h-12 rounded-lg border border-white/10 bg-[#121214]" />
-                    <p className="text-xs font-semibold text-white">
-                      Dark
-                    </p>
+                    <p className="text-xs font-semibold text-white">Dark</p>
                   </button>
 
                   <button
@@ -442,9 +427,7 @@ export default function Settings() {
                     }`}
                   >
                     <div className="mb-3 h-12 rounded-lg border border-white/20 bg-white" />
-                    <p className="text-xs font-semibold text-white">
-                      Light
-                    </p>
+                    <p className="text-xs font-semibold text-white">Light</p>
                   </button>
                 </div>
               </div>
@@ -504,8 +487,6 @@ export default function Settings() {
             </div>
           </motion.div>
         )}
-
-       
       </div>
     </div>
   );

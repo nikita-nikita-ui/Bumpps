@@ -11,20 +11,11 @@ import {
   HiOutlineSearch,
 } from "react-icons/hi";
 
-import {
-  PageHeader,
-  SearchInput,
-  Tabs,
-} from "../components/ui/Controls";
-
+import { SearchInput, Tabs } from "../components/ui/Controls";
 import GlassCard from "../components/ui/GlassCard";
 import Badge, { statusTone } from "../components/ui/Badge";
 import Button from "../components/ui/Button";
 import Modal from "../components/ui/Modal";
-
-/* =========================================================
-   Dummy Verification Data
-========================================================= */
 
 const verificationRequests = [
   {
@@ -107,10 +98,6 @@ const verificationRequests = [
   },
 ];
 
-/* =========================================================
-   Stat Card
-========================================================= */
-
 const StatCard = ({
   title,
   value,
@@ -127,17 +114,13 @@ const StatCard = ({
     <div className="group relative overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 p-5 shadow-soft backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-gold/30">
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium text-ink-muted">
-            {title}
-          </p>
+          <p className="text-xs font-medium text-ink-muted">{title}</p>
 
           <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">
             {value}
           </h2>
 
-          <p className="mt-2 text-[11px] text-ink-faint">
-            {description}
-          </p>
+          <p className="mt-2 text-[11px] text-ink-faint">{description}</p>
         </div>
 
         <div
@@ -150,60 +133,42 @@ const StatCard = ({
   </motion.div>
 );
 
-/* =========================================================
-   Verification Page
-========================================================= */
-
 export default function Verification() {
   const [tab, setTab] = useState("Pending");
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState(null);
   const [data, setData] = useState(verificationRequests);
 
-  /* =======================================================
-     Counts
-  ======================================================= */
-
-  const counts = {
-    Pending: data.filter(
-      (item) => item.status === "Pending"
-    ).length,
-
-    Approved: data.filter(
-      (item) => item.status === "Approved"
-    ).length,
-
-    Rejected: data.filter(
-      (item) => item.status === "Rejected"
-    ).length,
-  };
-
-  const total = data.length;
-
-  /* =======================================================
-     Filter
-  ======================================================= */
+  const counts = useMemo(
+    () => ({
+      Pending: data.filter((item) => item.status === "Pending").length,
+      Approved: data.filter((item) => item.status === "Approved").length,
+      Rejected: data.filter((item) => item.status === "Rejected").length,
+    }),
+    [data]
+  );
 
   const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
     return data
       .filter((item) => item.status === tab)
-      .filter((item) =>
-        item.user.name
-          .toLowerCase()
-          .includes(search.toLowerCase())
-      );
-  }, [data, tab, search]);
+      .filter((item) => {
+        if (!query) return true;
 
-  /* =======================================================
-     Status Update
-  ======================================================= */
+        return (
+          item.user.name.toLowerCase().includes(query) ||
+          item.user.email.toLowerCase().includes(query) ||
+          item.id.toLowerCase().includes(query) ||
+          item.idType.toLowerCase().includes(query)
+        );
+      });
+  }, [data, tab, search]);
 
   const setStatus = (id, status) => {
     setData((current) =>
       current.map((item) =>
-        item.id === id
-          ? { ...item, status }
-          : item
+        item.id === id ? { ...item, status } : item
       )
     );
 
@@ -213,18 +178,12 @@ export default function Verification() {
   return (
     <div className="px-4 pb-6 pt-0 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-
-        {/* =================================================
-            Header
-        ================================================= */}
-
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 p-6 shadow-soft backdrop-blur-xl sm:p-7"
         >
           <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
@@ -243,8 +202,8 @@ export default function Verification() {
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-                Review identity documents, approve authentic
-                profiles, and keep the BUMMPS community safe.
+                Review identity documents, approve authentic profiles, and
+                keep the BUMMPS community safe.
               </p>
             </div>
 
@@ -254,15 +213,10 @@ export default function Verification() {
           </div>
         </motion.div>
 
-        {/* =================================================
-            Stats
-        ================================================= */}
-
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-
           <StatCard
             title="Total Requests"
-            value={total}
+            value={data.length}
             description="All verification submissions"
             icon={HiOutlineIdentification}
             iconClass="text-gold"
@@ -295,54 +249,33 @@ export default function Verification() {
             iconClass="text-red-400"
             delay={0.2}
           />
-
         </div>
 
-        {/* =================================================
-            Main Verification Section
-        ================================================= */}
-
         <GlassCard className="overflow-hidden">
-
-          {/* Section Header */}
-
           <div className="border-b border-gold/[0.08] p-5 sm:p-6">
-
             <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-
               <div>
                 <h2 className="font-display text-lg font-bold text-white">
                   Verification Requests
                 </h2>
 
                 <p className="mt-1 text-xs text-ink-muted">
-                  Review submitted identity documents and manage
-                  verification status.
+                  Review submitted identity documents and manage verification
+                  status.
                 </p>
               </div>
 
-              {/* Search */}
-
-              <div className="relative">
-                <SearchInput
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Search applicant..."
-                  className="w-full sm:w-72"
-                />
-              </div>
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search applicant..."
+                className="w-full sm:w-72"
+              />
             </div>
 
-            {/* Tabs */}
-
             <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
               <Tabs
-                tabs={[
-                  "Pending",
-                  "Approved",
-                  "Rejected",
-                ]}
+                tabs={["Pending", "Approved", "Rejected"]}
                 active={tab}
                 onChange={setTab}
               />
@@ -354,42 +287,22 @@ export default function Verification() {
                 </span>{" "}
                 {tab.toLowerCase()} requests
               </div>
-
             </div>
           </div>
 
-          {/* =================================================
-              Cards
-          ================================================= */}
-
           <div className="p-5 sm:p-6">
-
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-
               {filtered.map((item, index) => (
                 <motion.div
                   key={item.id}
-                  initial={{
-                    opacity: 0,
-                    y: 15,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    delay: index * 0.06,
-                  }}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06 }}
                 >
                   <div className="group relative overflow-hidden rounded-2xl border border-gold/[0.12] bg-card/60 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-soft">
-
-                    {/* Top */}
-
-                    <div className="flex items-start justify-between">
-
-                      <div className="flex items-center gap-3">
-
-                        <div className="relative">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="relative shrink-0">
                           <img
                             src={item.user.avatar}
                             alt={item.user.name}
@@ -408,25 +321,16 @@ export default function Verification() {
                             {item.user.email}
                           </p>
                         </div>
-
                       </div>
 
-                      <Badge
-                        tone={statusTone(item.status)}
-                      >
+                      <Badge tone={statusTone(item.status)}>
                         {item.status}
                       </Badge>
-
                     </div>
-
-                    {/* Divider */}
 
                     <div className="my-4 h-px bg-white/[0.05]" />
 
-                    {/* Information */}
-
                     <div className="grid grid-cols-2 gap-3">
-
                       <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-3">
                         <p className="text-[9px] uppercase tracking-wider text-ink-faint">
                           Document
@@ -454,10 +358,7 @@ export default function Verification() {
                           </span>
                         </div>
                       </div>
-
                     </div>
-
-                    {/* Request ID */}
 
                     <div className="mt-3 flex items-center justify-between">
                       <span className="text-[10px] text-ink-faint">
@@ -469,10 +370,7 @@ export default function Verification() {
                       </span>
                     </div>
 
-                    {/* Actions */}
-
                     <div className="mt-5 flex gap-2">
-
                       <Button
                         variant="outline"
                         size="sm"
@@ -487,12 +385,7 @@ export default function Verification() {
                         <>
                           <button
                             title="Approve"
-                            onClick={() =>
-                              setStatus(
-                                item.id,
-                                "Approved"
-                              )
-                            }
+                            onClick={() => setStatus(item.id, "Approved")}
                             className="grid h-9 w-9 place-items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 transition-all hover:scale-110 hover:bg-emerald-500/20"
                           >
                             <HiOutlineCheck />
@@ -500,31 +393,21 @@ export default function Verification() {
 
                           <button
                             title="Reject"
-                            onClick={() =>
-                              setStatus(
-                                item.id,
-                                "Rejected"
-                              )
-                            }
+                            onClick={() => setStatus(item.id, "Rejected")}
                             className="grid h-9 w-9 place-items-center rounded-full border border-red-500/30 bg-red-500/10 text-red-400 transition-all hover:scale-110 hover:bg-red-500/20"
                           >
                             <HiOutlineX />
                           </button>
                         </>
                       )}
-
                     </div>
                   </div>
                 </motion.div>
               ))}
-
             </div>
-
-            {/* Empty State */}
 
             {filtered.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20">
-
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-gold/[0.14] bg-gold/[0.06] text-2xl text-gold">
                   <HiOutlineSearch />
                 </div>
@@ -536,16 +419,10 @@ export default function Verification() {
                 <p className="mt-1 text-xs text-ink-faint">
                   Try changing your search or verification tab.
                 </p>
-
               </div>
             )}
-
           </div>
         </GlassCard>
-
-        {/* =================================================
-            Document Preview Modal
-        ================================================= */}
 
         <Modal
           open={!!preview}
@@ -555,25 +432,20 @@ export default function Verification() {
         >
           {preview && (
             <div>
-
-              {/* Applicant Header */}
-
-              <div className="mb-5 flex items-center justify-between">
-
-                <div className="flex items-center gap-3">
-
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <img
                     src={preview.user.avatar}
                     alt={preview.user.name}
-                    className="h-12 w-12 rounded-full object-cover ring-2 ring-gold/20"
+                    className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-gold/20"
                   />
 
-                  <div>
-                    <p className="font-semibold text-white">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">
                       {preview.user.name}
                     </p>
 
-                    <p className="mt-0.5 text-[11px] text-ink-faint">
+                    <p className="mt-0.5 truncate text-[11px] text-ink-faint">
                       {preview.user.email}
                     </p>
 
@@ -581,18 +453,12 @@ export default function Verification() {
                       {preview.idType}
                     </p>
                   </div>
-
                 </div>
 
-                <Badge
-                  tone={statusTone(preview.status)}
-                >
+                <Badge tone={statusTone(preview.status)}>
                   {preview.status}
                 </Badge>
-
               </div>
-
-              {/* Document */}
 
               <div className="overflow-hidden rounded-2xl border border-gold/[0.14] bg-black/20 p-2">
                 <img
@@ -602,10 +468,7 @@ export default function Verification() {
                 />
               </div>
 
-              {/* Details */}
-
               <div className="mt-4 grid grid-cols-2 gap-3">
-
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                   <p className="text-[9px] uppercase tracking-wider text-ink-faint">
                     Request ID
@@ -625,23 +488,14 @@ export default function Verification() {
                     {preview.submitted}
                   </p>
                 </div>
-
               </div>
-
-              {/* Actions */}
 
               {preview.status === "Pending" && (
                 <div className="mt-5 flex gap-3">
-
                   <Button
                     variant="success"
                     className="flex-1"
-                    onClick={() =>
-                      setStatus(
-                        preview.id,
-                        "Approved"
-                      )
-                    }
+                    onClick={() => setStatus(preview.id, "Approved")}
                   >
                     <HiOutlineCheck className="mr-2 inline-block" />
                     Approve
@@ -650,24 +504,16 @@ export default function Verification() {
                   <Button
                     variant="danger"
                     className="flex-1"
-                    onClick={() =>
-                      setStatus(
-                        preview.id,
-                        "Rejected"
-                      )
-                    }
+                    onClick={() => setStatus(preview.id, "Rejected")}
                   >
                     <HiOutlineX className="mr-2 inline-block" />
                     Reject
                   </Button>
-
                 </div>
               )}
-
             </div>
           )}
         </Modal>
-
       </div>
     </div>
   );

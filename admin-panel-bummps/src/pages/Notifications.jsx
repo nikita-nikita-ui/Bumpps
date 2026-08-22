@@ -12,9 +12,7 @@ import {
   HiOutlineHeart,
   HiOutlineSparkles,
   HiOutlineGift,
-  HiOutlineSearch,
   HiOutlinePaperAirplane,
-  HiOutlineCollection,
 } from "react-icons/hi";
 
 import { SearchInput, SelectFilter, Tabs } from "../components/ui/Controls";
@@ -27,10 +25,6 @@ import {
   getNotificationHistory,
 } from "../services/Apis/users";
 
-/* =========================================================
-   Glass Card
-========================================================= */
-
 const Card = ({ children, className = "" }) => (
   <div
     className={`rounded-card border border-gold/[0.14] bg-card/70 backdrop-blur-xl shadow-soft ${className}`}
@@ -38,10 +32,6 @@ const Card = ({ children, className = "" }) => (
     {children}
   </div>
 );
-
-/* =========================================================
-   Stat Card
-========================================================= */
 
 const StatCard = ({
   title,
@@ -59,14 +49,10 @@ const StatCard = ({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-ink-muted">{title}</p>
-
           <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
             {value.toLocaleString()}
           </h2>
-
-          <p className="mt-2 text-[11px] text-ink-faint">
-            {description}
-          </p>
+          <p className="mt-2 text-[11px] text-ink-faint">{description}</p>
         </div>
 
         <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold/[0.14] bg-gold/[0.08] text-xl text-gold transition group-hover:bg-gold/15">
@@ -77,35 +63,24 @@ const StatCard = ({
   </motion.div>
 );
 
-/* =========================================================
-   Notification Type Meta
-========================================================= */
-
 const typeMeta = {
   match: {
     icon: HiOutlineHeart,
     label: "Match",
   },
-
   like: {
     icon: HiOutlineHeart,
     label: "Like",
   },
-
   recommendation: {
     icon: HiOutlineSparkles,
     label: "Recommendation",
   },
-
   birthday: {
     icon: HiOutlineGift,
     label: "Birthday",
   },
 };
-
-/* =========================================================
-   Helpers
-========================================================= */
 
 const getIcon = (notification) => {
   if (notification.type && typeMeta[notification.type]) {
@@ -139,35 +114,22 @@ const formatDate = (date, full = false) => {
   });
 };
 
-/* =========================================================
-   Notifications
-========================================================= */
-
 export default function Notifications() {
   const [composeOpen, setComposeOpen] = useState(false);
-
   const [target, setTarget] = useState("all");
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
-
   const [lastSent, setLastSent] = useState(null);
-
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState(null);
-
   const [search, setSearch] = useState("");
   const [targetFilter, setTargetFilter] = useState("All Audiences");
   const [typeFilter, setTypeFilter] = useState("All Types");
   const [tab, setTab] = useState("All Notifications");
-
-  /* =========================================================
-     Fetch Notification History
-  ========================================================= */
 
   const fetchHistory = async () => {
     setLoadingHistory(true);
@@ -175,7 +137,6 @@ export default function Notifications() {
 
     try {
       const res = await getNotificationHistory();
-
       setHistory(res.data.notifications || []);
     } catch (err) {
       setHistoryError(
@@ -191,10 +152,6 @@ export default function Notifications() {
     fetchHistory();
   }, []);
 
-  /* =========================================================
-     Reset Form
-  ========================================================= */
-
   const resetComposeForm = () => {
     setTitle("");
     setMessage("");
@@ -202,10 +159,6 @@ export default function Notifications() {
     setTarget("all");
     setError(null);
   };
-
-  /* =========================================================
-     Send Notification
-  ========================================================= */
 
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
@@ -239,10 +192,7 @@ export default function Notifications() {
       setLastSent(res.data);
 
       if (res.data.notification) {
-        setHistory((h) => [
-          res.data.notification,
-          ...h,
-        ]);
+        setHistory((h) => [res.data.notification, ...h]);
       }
 
       resetComposeForm();
@@ -256,10 +206,6 @@ export default function Notifications() {
       setSending(false);
     }
   };
-
-  /* =========================================================
-     Statistics
-  ========================================================= */
 
   const stats = useMemo(() => {
     const all = history.length;
@@ -294,10 +240,6 @@ export default function Notifications() {
     };
   }, [history]);
 
-  /* =========================================================
-     Filter Options
-  ========================================================= */
-
   const targetOptions = [
     "All Audiences",
     "All Users",
@@ -312,53 +254,29 @@ export default function Notifications() {
     "Birthday",
   ];
 
-  /* =========================================================
-     Tabs
-  ========================================================= */
-
   const tabFilter = {
     "All Notifications": () => true,
-
     Broadcasts: (n) => !n.recipient,
-
     "Specific Users": (n) => !!n.recipient,
   };
-
-  /* =========================================================
-     Filtered Notifications
-  ========================================================= */
 
   const filteredHistory = useMemo(() => {
     return [...history]
       .filter((n) => tabFilter[tab](n))
-
       .filter((n) => {
-        if (targetFilter === "All Audiences") {
-          return true;
-        }
-
-        if (targetFilter === "All Users") {
-          return !n.recipient;
-        }
-
-        if (targetFilter === "Specific User") {
-          return !!n.recipient;
-        }
-
+        if (targetFilter === "All Audiences") return true;
+        if (targetFilter === "All Users") return !n.recipient;
+        if (targetFilter === "Specific User") return !!n.recipient;
         return true;
       })
-
       .filter((n) => {
-        if (typeFilter === "All Types") {
-          return true;
-        }
+        if (typeFilter === "All Types") return true;
 
         return (
           getTypeLabel(n).toLowerCase() ===
           typeFilter.toLowerCase()
         );
       })
-
       .filter((n) => {
         const query = search.toLowerCase();
 
@@ -378,35 +296,18 @@ export default function Notifications() {
     search,
   ]);
 
-  /* =========================================================
-     UI
-  ========================================================= */
-
   return (
     <div className="px-4 pb-4 pt-0 text-white sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-
-        {/* =================================================
-            Header
-        ================================================= */}
-
         <motion.div
-          initial={{
-            opacity: 0,
-            y: -15,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
+          initial={{ opacity: 0, y: -15 }}
+          animate={{ opacity: 1, y: 0 }}
           className="relative overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 p-6 shadow-soft backdrop-blur-xl sm:p-8"
         >
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
-
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
                   Communication Center
                 </span>
@@ -437,13 +338,8 @@ export default function Notifications() {
                 Compose Notification
               </Button>
             </div>
-
           </div>
         </motion.div>
-
-        {/* =================================================
-            Success Alert
-        ================================================= */}
 
         <AnimatePresence>
           {lastSent && (
@@ -467,7 +363,6 @@ export default function Notifications() {
             >
               <Card className="border-emerald-400/20 bg-emerald-400/[0.04] p-5">
                 <div className="flex items-start justify-between gap-4">
-
                   <div className="flex items-start gap-3">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-400">
                       <HiOutlineCheckCircle className="text-xl" />
@@ -491,12 +386,10 @@ export default function Notifications() {
                   >
                     <HiOutlineTrash className="text-sm" />
                   </button>
-
                 </div>
 
                 {lastSent.notification && (
                   <div className="mt-4 rounded-2xl border border-white/5 bg-[#0F1013] p-5">
-
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-faint">
@@ -538,7 +431,6 @@ export default function Notifications() {
                         )}
                       </span>
                     </div>
-
                   </div>
                 )}
               </Card>
@@ -546,12 +438,7 @@ export default function Notifications() {
           )}
         </AnimatePresence>
 
-        {/* =================================================
-            Stats
-        ================================================= */}
-
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-
           <StatCard
             title="Total Notifications"
             value={stats.all}
@@ -583,21 +470,11 @@ export default function Notifications() {
             description="Notifications sent today"
             delay={0.2}
           />
-
         </div>
 
-        {/* =================================================
-            Notification Management
-        ================================================= */}
-
         <Card className="overflow-hidden">
-
-          {/* Header */}
-
           <div className="border-b border-gold/[0.08] p-5 sm:p-6">
-
             <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-
               <div>
                 <h2 className="font-display text-lg font-bold text-white">
                   Notification Activity
@@ -611,13 +488,9 @@ export default function Notifications() {
 
               <div className="flex items-center gap-2 text-xs text-ink-faint">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
-
                 {filteredHistory.length} notifications found
               </div>
-
             </div>
-
-            {/* Tabs */}
 
             <div className="mb-5 overflow-x-auto">
               <Tabs
@@ -627,10 +500,7 @@ export default function Notifications() {
               />
             </div>
 
-            {/* Filters */}
-
             <div className="flex flex-col gap-3 xl:flex-row">
-
               <div className="relative flex-1">
                 <SearchInput
                   value={search}
@@ -653,30 +523,22 @@ export default function Notifications() {
                 options={typeOptions}
                 className="xl:w-48"
               />
-
             </div>
-
           </div>
 
-          {/* Notification List */}
-
           <div className="relative">
-
             {loadingHistory ? (
               <div className="flex min-h-[350px] items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
-
                   <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/20 border-t-gold" />
 
                   <p className="text-xs text-ink-muted">
                     Loading notifications...
                   </p>
-
                 </div>
               </div>
             ) : historyError ? (
               <div className="flex min-h-[350px] flex-col items-center justify-center px-5 text-center">
-
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-danger/20 bg-danger/10 text-2xl text-danger">
                   <HiOutlineExclamationCircle />
                 </div>
@@ -695,11 +557,9 @@ export default function Notifications() {
                 >
                   Retry
                 </button>
-
               </div>
             ) : filteredHistory.length === 0 ? (
               <div className="flex min-h-[350px] flex-col items-center justify-center px-5 text-center">
-
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/[0.14] bg-gold/[0.06] text-2xl text-gold">
                   <HiOutlineBell />
                 </div>
@@ -712,16 +572,12 @@ export default function Notifications() {
                   Try changing your search query or filters to
                   find notifications.
                 </p>
-
               </div>
             ) : (
               <div className="divide-y divide-white/5">
-
                 {filteredHistory.map((notification, index) => {
                   const Icon = getIcon(notification);
-
-                  const isSpecific =
-                    !!notification.recipient;
+                  const isSpecific = !!notification.recipient;
 
                   return (
                     <motion.div
@@ -739,11 +595,7 @@ export default function Notifications() {
                       }}
                       className="group flex flex-col gap-4 px-5 py-5 transition-colors hover:bg-white/[0.02] sm:px-6"
                     >
-
                       <div className="flex items-start gap-4">
-
-                        {/* Icon */}
-
                         <div
                           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors ${
                             isSpecific
@@ -754,12 +606,8 @@ export default function Notifications() {
                           <Icon className="text-lg" />
                         </div>
 
-                        {/* Content */}
-
                         <div className="min-w-0 flex-1">
-
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-
                             <div className="min-w-0">
                               <h3 className="truncate text-sm font-semibold text-white">
                                 {notification.title ||
@@ -771,8 +619,6 @@ export default function Notifications() {
                                   "No message available"}
                               </p>
                             </div>
-
-                            {/* Badge */}
 
                             <span
                               className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-pill border px-2.5 py-1 text-[10px] font-semibold ${
@@ -789,13 +635,9 @@ export default function Notifications() {
 
                               {getTypeLabel(notification)}
                             </span>
-
                           </div>
 
-                          {/* Footer */}
-
                           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-
                             <div className="flex items-center gap-1.5 text-ink-faint">
                               <HiOutlineClock className="text-xs" />
 
@@ -822,27 +664,16 @@ export default function Notifications() {
                                 </span>
                               </div>
                             )}
-
                           </div>
-
                         </div>
-
                       </div>
-
                     </motion.div>
                   );
                 })}
-
               </div>
             )}
-
           </div>
-
         </Card>
-
-        {/* =================================================
-            Compose Modal
-        ================================================= */}
 
         <Modal
           open={composeOpen}
@@ -853,16 +684,12 @@ export default function Notifications() {
           title="Compose Notification"
         >
           <div className="space-y-5">
-
-            {/* Audience */}
-
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
                 Send To
               </label>
 
               <div className="grid grid-cols-2 gap-3">
-
                 <button
                   onClick={() => setTarget("all")}
                   className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${
@@ -932,11 +759,8 @@ export default function Notifications() {
                     </p>
                   </div>
                 </button>
-
               </div>
             </div>
-
-            {/* User ID */}
 
             <AnimatePresence>
               {target === "single" && (
@@ -962,17 +786,13 @@ export default function Notifications() {
                   <input
                     type="text"
                     value={userId}
-                    onChange={(e) =>
-                      setUserId(e.target.value)
-                    }
+                    onChange={(e) => setUserId(e.target.value)}
                     placeholder="Enter user ID"
                     className="w-full rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-ink-faint focus:border-gold/50"
                   />
                 </motion.div>
               )}
             </AnimatePresence>
-
-            {/* Title */}
 
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
@@ -982,15 +802,11 @@ export default function Notifications() {
               <input
                 type="text"
                 value={title}
-                onChange={(e) =>
-                  setTitle(e.target.value)
-                }
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Profile Verified"
                 className="w-full rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-ink-faint focus:border-gold/50"
               />
             </div>
-
-            {/* Message */}
 
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
@@ -999,19 +815,14 @@ export default function Notifications() {
 
               <textarea
                 value={message}
-                onChange={(e) =>
-                  setMessage(e.target.value)
-                }
+                onChange={(e) => setMessage(e.target.value)}
                 rows={4}
                 placeholder="Write your notification message..."
                 className="w-full resize-none rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-ink-faint focus:border-gold/50"
               />
             </div>
 
-            {/* Preview */}
-
             <div className="rounded-2xl border border-gold/[0.12] bg-white/[0.02] p-4">
-
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-faint">
                   Push Preview
@@ -1021,9 +832,7 @@ export default function Notifications() {
               </div>
 
               <div className="rounded-xl border border-white/5 bg-[#0F1013] p-4">
-
                 <div className="flex items-start gap-3">
-
                   <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gold-gradient font-bold text-black">
                     B
                   </div>
@@ -1038,23 +847,16 @@ export default function Notifications() {
                         "Your notification message will appear here..."}
                     </p>
                   </div>
-
                 </div>
-
               </div>
             </div>
-
-            {/* Error */}
 
             {error && (
               <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-3 text-xs text-danger">
                 <HiOutlineExclamationCircle className="mt-0.5 shrink-0 text-sm" />
-
                 <span>{error}</span>
               </div>
             )}
-
-            {/* Send */}
 
             <Button
               variant="primary"
@@ -1069,10 +871,8 @@ export default function Notifications() {
                 ? "Send to All Users"
                 : "Send to Specific User"}
             </Button>
-
           </div>
         </Modal>
-
       </div>
     </div>
   );
