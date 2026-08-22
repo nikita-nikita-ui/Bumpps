@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   HiOutlineBell,
@@ -12,41 +12,176 @@ import {
   HiOutlineHeart,
   HiOutlineSparkles,
   HiOutlineGift,
+  HiOutlineSearch,
+  HiOutlinePaperAirplane,
+  HiOutlineCollection,
 } from "react-icons/hi";
-import { PageHeader } from "../components/ui/Controls";
-import GlassCard from "../components/ui/GlassCard";
+
+import { SearchInput, SelectFilter, Tabs } from "../components/ui/Controls";
 import Button from "../components/ui/Button";
 import Modal from "../components/ui/Modal";
-import { sendNotificationToAll, sendNotificationToUser, getNotificationHistory } from "../services/Apis/users";
+
+import {
+  sendNotificationToAll,
+  sendNotificationToUser,
+  getNotificationHistory,
+} from "../services/Apis/users";
+
+/* =========================================================
+   Glass Card
+========================================================= */
+
+const Card = ({ children, className = "" }) => (
+  <div
+    className={`rounded-card border border-gold/[0.14] bg-card/70 backdrop-blur-xl shadow-soft ${className}`}
+  >
+    {children}
+  </div>
+);
+
+/* =========================================================
+   Stat Card
+========================================================= */
+
+const StatCard = ({
+  title,
+  value,
+  icon: Icon,
+  description,
+  delay = 0,
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 18 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay }}
+  >
+    <Card className="group relative overflow-hidden p-5 transition duration-300 hover:-translate-y-1 hover:border-gold/30">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-medium text-ink-muted">{title}</p>
+
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            {value.toLocaleString()}
+          </h2>
+
+          <p className="mt-2 text-[11px] text-ink-faint">
+            {description}
+          </p>
+        </div>
+
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold/[0.14] bg-gold/[0.08] text-xl text-gold transition group-hover:bg-gold/15">
+          <Icon />
+        </div>
+      </div>
+    </Card>
+  </motion.div>
+);
+
+/* =========================================================
+   Notification Type Meta
+========================================================= */
 
 const typeMeta = {
-  match: { icon: HiOutlineHeart, label: "Match" },
-  like: { icon: HiOutlineHeart, label: "Like" },
-  recommendation: { icon: HiOutlineSparkles, label: "Recommendation" },
-  birthday: { icon: HiOutlineGift, label: "Birthday" },
+  match: {
+    icon: HiOutlineHeart,
+    label: "Match",
+  },
+
+  like: {
+    icon: HiOutlineHeart,
+    label: "Like",
+  },
+
+  recommendation: {
+    icon: HiOutlineSparkles,
+    label: "Recommendation",
+  },
+
+  birthday: {
+    icon: HiOutlineGift,
+    label: "Birthday",
+  },
 };
+
+/* =========================================================
+   Helpers
+========================================================= */
+
+const getIcon = (notification) => {
+  if (notification.type && typeMeta[notification.type]) {
+    return typeMeta[notification.type].icon;
+  }
+
+  return notification.recipient
+    ? HiOutlineUser
+    : HiOutlineSpeakerphone;
+};
+
+const getTypeLabel = (notification) => {
+  if (notification.type && typeMeta[notification.type]) {
+    return typeMeta[notification.type].label;
+  }
+
+  return notification.recipient
+    ? "Specific User"
+    : "All Users";
+};
+
+const formatDate = (date, full = false) => {
+  if (!date) return "-";
+
+  return new Date(date).toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: full ? "numeric" : undefined,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+/* =========================================================
+   Notifications
+========================================================= */
 
 export default function Notifications() {
   const [composeOpen, setComposeOpen] = useState(false);
+
   const [target, setTarget] = useState("all");
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
+
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+
   const [lastSent, setLastSent] = useState(null);
+
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [historyError, setHistoryError] = useState(null);
 
+  const [search, setSearch] = useState("");
+  const [targetFilter, setTargetFilter] = useState("All Audiences");
+  const [typeFilter, setTypeFilter] = useState("All Types");
+  const [tab, setTab] = useState("All Notifications");
+
+  /* =========================================================
+     Fetch Notification History
+  ========================================================= */
+
   const fetchHistory = async () => {
     setLoadingHistory(true);
     setHistoryError(null);
+
     try {
       const res = await getNotificationHistory();
+
       setHistory(res.data.notifications || []);
     } catch (err) {
-      setHistoryError(err?.response?.data?.message || "Notification history load nahi ho paayi.");
+      setHistoryError(
+        err?.response?.data?.message ||
+          "Notification history load nahi ho paayi."
+      );
     } finally {
       setLoadingHistory(false);
     }
@@ -56,6 +191,10 @@ export default function Notifications() {
     fetchHistory();
   }, []);
 
+  /* =========================================================
+     Reset Form
+  ========================================================= */
+
   const resetComposeForm = () => {
     setTitle("");
     setMessage("");
@@ -64,6 +203,10 @@ export default function Notifications() {
     setError(null);
   };
 
+  /* =========================================================
+     Send Notification
+  ========================================================= */
+
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
       setError("Title aur Message dono required hain.");
@@ -71,7 +214,9 @@ export default function Notifications() {
     }
 
     if (target === "single" && !userId.trim()) {
-      setError("User ID required hai specific user ko bhejne ke liye.");
+      setError(
+        "User ID required hai specific user ko bhejne ke liye."
+      );
       return;
     }
 
@@ -81,265 +226,854 @@ export default function Notifications() {
     try {
       const res =
         target === "all"
-          ? await sendNotificationToAll({ title, message })
-          : await sendNotificationToUser({ userId, title, message });
+          ? await sendNotificationToAll({
+              title,
+              message,
+            })
+          : await sendNotificationToUser({
+              userId,
+              title,
+              message,
+            });
 
       setLastSent(res.data);
-      setHistory((h) => [res.data.notification, ...h]);
+
+      if (res.data.notification) {
+        setHistory((h) => [
+          res.data.notification,
+          ...h,
+        ]);
+      }
+
       resetComposeForm();
       setComposeOpen(false);
     } catch (err) {
-      setError(err?.response?.data?.message || "Notification bhejne me error aaya. Dobara try karo.");
+      setError(
+        err?.response?.data?.message ||
+          "Notification bhejne me error aaya. Dobara try karo."
+      );
     } finally {
       setSending(false);
     }
   };
 
-  const getIcon = (n) => {
-    if (n.type && typeMeta[n.type]) return typeMeta[n.type].icon;
-    return n.recipient ? HiOutlineUser : HiOutlineSpeakerphone;
+  /* =========================================================
+     Statistics
+  ========================================================= */
+
+  const stats = useMemo(() => {
+    const all = history.length;
+
+    const broadcasts = history.filter(
+      (n) => !n.recipient
+    ).length;
+
+    const specific = history.filter(
+      (n) => !!n.recipient
+    ).length;
+
+    const today = new Date();
+
+    const sentToday = history.filter((n) => {
+      if (!n.createdAt) return false;
+
+      const date = new Date(n.createdAt);
+
+      return (
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear()
+      );
+    }).length;
+
+    return {
+      all,
+      broadcasts,
+      specific,
+      sentToday,
+    };
+  }, [history]);
+
+  /* =========================================================
+     Filter Options
+  ========================================================= */
+
+  const targetOptions = [
+    "All Audiences",
+    "All Users",
+    "Specific User",
+  ];
+
+  const typeOptions = [
+    "All Types",
+    "Match",
+    "Like",
+    "Recommendation",
+    "Birthday",
+  ];
+
+  /* =========================================================
+     Tabs
+  ========================================================= */
+
+  const tabFilter = {
+    "All Notifications": () => true,
+
+    Broadcasts: (n) => !n.recipient,
+
+    "Specific Users": (n) => !!n.recipient,
   };
 
-  const getBadgeLabel = (n) => {
-    if (n.type && typeMeta[n.type]) return typeMeta[n.type].label;
-    return n.recipient ? "Specific User" : "All Users";
-  };
+  /* =========================================================
+     Filtered Notifications
+  ========================================================= */
+
+  const filteredHistory = useMemo(() => {
+    return [...history]
+      .filter((n) => tabFilter[tab](n))
+
+      .filter((n) => {
+        if (targetFilter === "All Audiences") {
+          return true;
+        }
+
+        if (targetFilter === "All Users") {
+          return !n.recipient;
+        }
+
+        if (targetFilter === "Specific User") {
+          return !!n.recipient;
+        }
+
+        return true;
+      })
+
+      .filter((n) => {
+        if (typeFilter === "All Types") {
+          return true;
+        }
+
+        return (
+          getTypeLabel(n).toLowerCase() ===
+          typeFilter.toLowerCase()
+        );
+      })
+
+      .filter((n) => {
+        const query = search.toLowerCase();
+
+        return (
+          (n.title || "").toLowerCase().includes(query) ||
+          (n.message || "").toLowerCase().includes(query) ||
+          getTypeLabel(n)
+            .toLowerCase()
+            .includes(query)
+        );
+      });
+  }, [
+    history,
+    tab,
+    targetFilter,
+    typeFilter,
+    search,
+  ]);
+
+  /* =========================================================
+     UI
+  ========================================================= */
 
   return (
-    <div>
-      <PageHeader
-        eyebrow="Moderation"
-        title="Notifications"
-        description="Send broadcasts and manage system alerts."
-        actions={<Button variant="primary" icon={HiOutlineSpeakerphone} onClick={() => setComposeOpen(true)}>Compose Notification</Button>}
-      />
+    <div className="px-4 pb-4 pt-0 text-white sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
+      <div className="mx-auto max-w-[1600px] space-y-6">
 
-      <AnimatePresence>
-        {lastSent && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: "auto" }}
-            exit={{ opacity: 0, y: -8, height: 0 }}
-            className="mt-4 overflow-hidden"
-          >
-            <div className="rounded-2xl border border-success/25 bg-gradient-to-br from-success/[0.08] via-success/[0.04] to-transparent p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-success/30 bg-success/10 text-success">
-                    <HiOutlineCheckCircle className="text-xl" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{lastSent.message}</p>
-                    <p className="mt-0.5 text-xs text-ink-faint">Broadcast delivered · Server response</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setLastSent(null)}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-white/10 text-ink-muted transition-colors hover:border-danger hover:text-danger"
-                  aria-label="Dismiss"
-                >
-                  <HiOutlineTrash className="text-sm" />
-                </button>
+        {/* =================================================
+            Header
+        ================================================= */}
+
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: -15,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="relative overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 p-6 shadow-soft backdrop-blur-xl sm:p-8"
+        >
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
+
+                <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400">
+                  Communication Center
+                </span>
               </div>
 
-              <div className="mt-4 rounded-xl border border-white/5 bg-[#0F1013] p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-[180px]">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-faint">Title</p>
-                    <p className="mt-1.5 text-sm font-medium text-white">{lastSent.notification.title}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 rounded-pill border border-gold/20 bg-gold/[0.06] px-3 py-1.5">
-                    {lastSent.notification.recipient ? (
-                      <HiOutlineUser className="text-[11px] text-gold" />
-                    ) : (
-                      <HiOutlineUsers className="text-[11px] text-gold" />
-                    )}
-                    <span className="text-xs font-semibold text-gold">
-                      {lastSent.notification.recipient ? "Specific User" : "All Users"}
-                    </span>
-                  </div>
-                </div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.25em] text-gold">
+                Platform Notifications
+              </p>
 
-                <div className="mt-4 h-px w-full bg-white/5" />
+              <h1 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
+                Manage Notifications
+              </h1>
 
-                <div className="mt-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-faint">Message</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{lastSent.notification.message}</p>
-                </div>
-
-                <div className="mt-4 flex items-center gap-1.5 text-ink-faint">
-                  <HiOutlineClock className="text-xs shrink-0" />
-                  <p className="text-xs">
-                    Sent on{" "}
-                    <span className="text-ink-muted">
-                      {new Date(lastSent.notification.createdAt).toLocaleString(undefined, {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </p>
-                </div>
-              </div>
+              <p className="mt-2 max-w-xl text-sm text-ink-muted">
+                Send broadcasts, notify individual users and
+                monitor notification activity across the BUMMPS
+                platform.
+              </p>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      <div className="mt-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-muted">Recent Broadcasts</h2>
-          {!loadingHistory && (
-            <span className="text-[11px] text-ink-faint">{history.length} total</span>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="primary"
+                icon={HiOutlineSpeakerphone}
+                size="md"
+                onClick={() => setComposeOpen(true)}
+              >
+                Compose Notification
+              </Button>
+            </div>
+
+          </div>
+        </motion.div>
+
+        {/* =================================================
+            Success Alert
+        ================================================= */}
+
+        <AnimatePresence>
+          {lastSent && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: -12,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                height: "auto",
+              }}
+              exit={{
+                opacity: 0,
+                y: -12,
+                height: 0,
+              }}
+              className="overflow-hidden"
+            >
+              <Card className="border-emerald-400/20 bg-emerald-400/[0.04] p-5">
+                <div className="flex items-start justify-between gap-4">
+
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-emerald-400">
+                      <HiOutlineCheckCircle className="text-xl" />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-semibold text-white">
+                        Notification sent successfully
+                      </p>
+
+                      <p className="mt-0.5 text-xs text-ink-faint">
+                        Your notification has been added to the
+                        recent activity list.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setLastSent(null)}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/10 text-ink-muted transition hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
+                  >
+                    <HiOutlineTrash className="text-sm" />
+                  </button>
+
+                </div>
+
+                {lastSent.notification && (
+                  <div className="mt-4 rounded-2xl border border-white/5 bg-[#0F1013] p-5">
+
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-faint">
+                          Notification
+                        </p>
+
+                        <p className="mt-1.5 text-sm font-semibold text-white">
+                          {lastSent.notification.title}
+                        </p>
+                      </div>
+
+                      <span className="inline-flex w-fit items-center gap-1.5 rounded-pill border border-gold/20 bg-gold/[0.06] px-3 py-1.5 text-[10px] font-semibold text-gold">
+                        {lastSent.notification.recipient ? (
+                          <HiOutlineUser />
+                        ) : (
+                          <HiOutlineUsers />
+                        )}
+
+                        {lastSent.notification.recipient
+                          ? "Specific User"
+                          : "All Users"}
+                      </span>
+                    </div>
+
+                    <div className="my-4 h-px bg-white/5" />
+
+                    <p className="text-sm leading-relaxed text-ink-muted">
+                      {lastSent.notification.message}
+                    </p>
+
+                    <div className="mt-4 flex items-center gap-1.5 text-ink-faint">
+                      <HiOutlineClock className="text-xs" />
+
+                      <span className="text-xs">
+                        Sent{" "}
+                        {formatDate(
+                          lastSent.notification.createdAt,
+                          true
+                        )}
+                      </span>
+                    </div>
+
+                  </div>
+                )}
+              </Card>
+            </motion.div>
           )}
+        </AnimatePresence>
+
+        {/* =================================================
+            Stats
+        ================================================= */}
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+
+          <StatCard
+            title="Total Notifications"
+            value={stats.all}
+            icon={HiOutlineBell}
+            description="All notification records"
+            delay={0.05}
+          />
+
+          <StatCard
+            title="Broadcasts"
+            value={stats.broadcasts}
+            icon={HiOutlineUsers}
+            description="Notifications sent to everyone"
+            delay={0.1}
+          />
+
+          <StatCard
+            title="Specific Users"
+            value={stats.specific}
+            icon={HiOutlineUser}
+            description="Direct user notifications"
+            delay={0.15}
+          />
+
+          <StatCard
+            title="Sent Today"
+            value={stats.sentToday}
+            icon={HiOutlinePaperAirplane}
+            description="Notifications sent today"
+            delay={0.2}
+          />
+
         </div>
 
-        <GlassCard className="divide-y divide-white/5">
-          {loadingHistory ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/20 border-t-gold" />
-              <p className="text-ink-faint">Loading notifications...</p>
-            </div>
-          ) : historyError ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-              <div className="grid h-10 w-10 place-items-center rounded-full border border-danger/30 bg-danger/10 text-danger">
-                <HiOutlineExclamationCircle />
+        {/* =================================================
+            Notification Management
+        ================================================= */}
+
+        <Card className="overflow-hidden">
+
+          {/* Header */}
+
+          <div className="border-b border-gold/[0.08] p-5 sm:p-6">
+
+            <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+
+              <div>
+                <h2 className="font-display text-lg font-bold text-white">
+                  Notification Activity
+                </h2>
+
+                <p className="mt-1 text-xs text-ink-muted">
+                  View and manage recent notifications sent from
+                  the BUMMPS admin panel.
+                </p>
               </div>
-              <p className="text-danger">{historyError}</p>
-              <button onClick={fetchHistory} className="text-xs font-semibold text-gold hover:underline">
-                Retry
-              </button>
-            </div>
-          ) : history.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-              <div className="grid h-10 w-10 place-items-center rounded-full border border-gold/20 bg-gold/5 text-gold/60">
-                <HiOutlineBell />
+
+              <div className="flex items-center gap-2 text-xs text-ink-faint">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+
+                {filteredHistory.length} notifications found
               </div>
-              <p className="text-ink-faint">No broadcasts sent yet.</p>
-              <p className="text-xs text-ink-faint/70">Notifications you send will appear here.</p>
+
             </div>
-          ) : (
-            history.map((n, i) => {
-              const Icon = getIcon(n);
-              return (
-                <motion.div
-                  key={n._id || i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.02 }}
-                  className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-white/[0.02] sm:flex-row sm:items-center"
+
+            {/* Tabs */}
+
+            <div className="mb-5 overflow-x-auto">
+              <Tabs
+                tabs={Object.keys(tabFilter)}
+                active={tab}
+                onChange={setTab}
+              />
+            </div>
+
+            {/* Filters */}
+
+            <div className="flex flex-col gap-3 xl:flex-row">
+
+              <div className="relative flex-1">
+                <SearchInput
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Search notification title or message..."
+                  className="w-full"
+                />
+              </div>
+
+              <SelectFilter
+                value={targetFilter}
+                onChange={setTargetFilter}
+                options={targetOptions}
+                className="xl:w-52"
+              />
+
+              <SelectFilter
+                value={typeFilter}
+                onChange={setTypeFilter}
+                options={typeOptions}
+                className="xl:w-48"
+              />
+
+            </div>
+
+          </div>
+
+          {/* Notification List */}
+
+          <div className="relative">
+
+            {loadingHistory ? (
+              <div className="flex min-h-[350px] items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/20 border-t-gold" />
+
+                  <p className="text-xs text-ink-muted">
+                    Loading notifications...
+                  </p>
+
+                </div>
+              </div>
+            ) : historyError ? (
+              <div className="flex min-h-[350px] flex-col items-center justify-center px-5 text-center">
+
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-danger/20 bg-danger/10 text-2xl text-danger">
+                  <HiOutlineExclamationCircle />
+                </div>
+
+                <h3 className="text-sm font-semibold text-white">
+                  Unable to load notifications
+                </h3>
+
+                <p className="mt-1 max-w-sm text-xs text-ink-muted">
+                  {historyError}
+                </p>
+
+                <button
+                  onClick={fetchHistory}
+                  className="mt-4 text-xs font-semibold text-gold transition hover:underline"
                 >
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-gold/30 bg-gold/10 text-gold">
-                    <Icon />
+                  Retry
+                </button>
+
+              </div>
+            ) : filteredHistory.length === 0 ? (
+              <div className="flex min-h-[350px] flex-col items-center justify-center px-5 text-center">
+
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/[0.14] bg-gold/[0.06] text-2xl text-gold">
+                  <HiOutlineBell />
+                </div>
+
+                <h3 className="text-sm font-semibold text-white">
+                  No notifications found
+                </h3>
+
+                <p className="mt-1 max-w-sm text-xs text-ink-muted">
+                  Try changing your search query or filters to
+                  find notifications.
+                </p>
+
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+
+                {filteredHistory.map((notification, index) => {
+                  const Icon = getIcon(notification);
+
+                  const isSpecific =
+                    !!notification.recipient;
+
+                  return (
+                    <motion.div
+                      key={notification._id || index}
+                      initial={{
+                        opacity: 0,
+                        y: 8,
+                      }}
+                      animate={{
+                        opacity: 1,
+                        y: 0,
+                      }}
+                      transition={{
+                        delay: index * 0.025,
+                      }}
+                      className="group flex flex-col gap-4 px-5 py-5 transition-colors hover:bg-white/[0.02] sm:px-6"
+                    >
+
+                      <div className="flex items-start gap-4">
+
+                        {/* Icon */}
+
+                        <div
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors ${
+                            isSpecific
+                              ? "border-blue-400/20 bg-blue-400/[0.08] text-blue-400"
+                              : "border-gold/[0.18] bg-gold/[0.07] text-gold"
+                          }`}
+                        >
+                          <Icon className="text-lg" />
+                        </div>
+
+                        {/* Content */}
+
+                        <div className="min-w-0 flex-1">
+
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+
+                            <div className="min-w-0">
+                              <h3 className="truncate text-sm font-semibold text-white">
+                                {notification.title ||
+                                  getTypeLabel(notification)}
+                              </h3>
+
+                              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-ink-faint">
+                                {notification.message ||
+                                  "No message available"}
+                              </p>
+                            </div>
+
+                            {/* Badge */}
+
+                            <span
+                              className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-pill border px-2.5 py-1 text-[10px] font-semibold ${
+                                isSpecific
+                                  ? "border-blue-400/20 bg-blue-400/[0.06] text-blue-400"
+                                  : "border-gold/20 bg-gold/[0.06] text-gold"
+                              }`}
+                            >
+                              {isSpecific ? (
+                                <HiOutlineUser />
+                              ) : (
+                                <HiOutlineUsers />
+                              )}
+
+                              {getTypeLabel(notification)}
+                            </span>
+
+                          </div>
+
+                          {/* Footer */}
+
+                          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+
+                            <div className="flex items-center gap-1.5 text-ink-faint">
+                              <HiOutlineClock className="text-xs" />
+
+                              <span className="text-[11px]">
+                                {formatDate(
+                                  notification.createdAt,
+                                  true
+                                )}
+                              </span>
+                            </div>
+
+                            {notification.recipient && (
+                              <div className="flex items-center gap-1.5">
+                                <HiOutlineUser className="text-xs text-ink-faint" />
+
+                                <span className="max-w-[220px] truncate text-[11px] text-ink-faint">
+                                  User:{" "}
+                                  {typeof notification.recipient ===
+                                  "object"
+                                    ? notification.recipient._id ||
+                                      notification.recipient.name ||
+                                      "Specific User"
+                                    : notification.recipient}
+                                </span>
+                              </div>
+                            )}
+
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    </motion.div>
+                  );
+                })}
+
+              </div>
+            )}
+
+          </div>
+
+        </Card>
+
+        {/* =================================================
+            Compose Modal
+        ================================================= */}
+
+        <Modal
+          open={composeOpen}
+          onClose={() => {
+            setComposeOpen(false);
+            resetComposeForm();
+          }}
+          title="Compose Notification"
+        >
+          <div className="space-y-5">
+
+            {/* Audience */}
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                Send To
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+
+                <button
+                  onClick={() => setTarget("all")}
+                  className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${
+                    target === "all"
+                      ? "border-gold/40 bg-gold/[0.08]"
+                      : "border-white/10 bg-white/[0.02] hover:border-gold/20"
+                  }`}
+                >
+                  <div
+                    className={`grid h-9 w-9 place-items-center rounded-xl ${
+                      target === "all"
+                        ? "bg-gold/15 text-gold"
+                        : "bg-white/5 text-ink-muted"
+                    }`}
+                  >
+                    <HiOutlineUsers />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-white">{n.title || getBadgeLabel(n)}</p>
-                    <p className="mt-0.5 truncate text-xs text-ink-faint">{n.message}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center justify-between gap-3 sm:flex-col sm:items-end sm:text-right">
-                    <span className="inline-block rounded-pill border border-gold/20 bg-gold/[0.06] px-2.5 py-1 text-[10px] font-semibold text-gold">
-                      {getBadgeLabel(n)}
-                    </span>
-                    <p className="text-[11px] text-ink-faint sm:mt-1.5">
-                      {new Date(n.createdAt).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+
+                  <div>
+                    <p
+                      className={`text-xs font-semibold ${
+                        target === "all"
+                          ? "text-gold"
+                          : "text-white"
+                      }`}
+                    >
+                      All Users
+                    </p>
+
+                    <p className="mt-0.5 text-[10px] text-ink-faint">
+                      Broadcast
                     </p>
                   </div>
-                </motion.div>
-              );
-            })
-          )}
-        </GlassCard>
-      </div>
+                </button>
 
-      <Modal open={composeOpen} onClose={() => { setComposeOpen(false); resetComposeForm(); }} title="Broadcast Notification">
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-ink-muted">Send To</label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setTarget("all")}
-                className={`flex items-center gap-1.5 rounded-pill border px-3.5 py-1.5 text-xs font-semibold transition-all ${target === "all" ? "border-gold bg-gold/10 text-gold" : "border-white/10 text-ink-muted hover:border-gold/30"
+                <button
+                  onClick={() => setTarget("single")}
+                  className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition-all ${
+                    target === "single"
+                      ? "border-gold/40 bg-gold/[0.08]"
+                      : "border-white/10 bg-white/[0.02] hover:border-gold/20"
                   }`}
-              >
-                <HiOutlineUsers className="text-[11px]" /> All Users
-              </button>
-              <button
-                onClick={() => setTarget("single")}
-                className={`flex items-center gap-1.5 rounded-pill border px-3.5 py-1.5 text-xs font-semibold transition-all ${target === "single" ? "border-gold bg-gold/10 text-gold" : "border-white/10 text-ink-muted hover:border-gold/30"
-                  }`}
-              >
-                <HiOutlineUser className="text-[11px]" /> Specific User
-              </button>
-            </div>
-          </div>
+                >
+                  <div
+                    className={`grid h-9 w-9 place-items-center rounded-xl ${
+                      target === "single"
+                        ? "bg-gold/15 text-gold"
+                        : "bg-white/5 text-ink-muted"
+                    }`}
+                  >
+                    <HiOutlineUser />
+                  </div>
 
-          <AnimatePresence>
-            {target === "single" && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-ink-muted">User ID</label>
-                <input
-                  type="text"
-                  value={userId}
-                  onChange={(e) => setUserId(e.target.value)}
-                  placeholder="e.g. 6a7596d0ef5fcbeebc988848"
-                  className="w-full rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-ink-faint outline-none focus:border-gold/50"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <div>
+                    <p
+                      className={`text-xs font-semibold ${
+                        target === "single"
+                          ? "text-gold"
+                          : "text-white"
+                      }`}
+                    >
+                      Specific User
+                    </p>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-ink-muted">Title</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Profile Verified"
-              className="w-full rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-ink-faint outline-none focus:border-gold/50"
-            />
-          </div>
+                    <p className="mt-0.5 text-[10px] text-ink-faint">
+                      Direct message
+                    </p>
+                  </div>
+                </button>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-ink-muted">Message</label>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-              placeholder="Write your push notification message..."
-              className="w-full rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-ink-faint outline-none focus:border-gold/50 resize-none"
-            />
-          </div>
-
-          <div className="rounded-2xl border border-gold/[0.12] bg-white/[0.02] p-4">
-            <p className="text-[10px] uppercase tracking-widest text-ink-faint mb-2">Push Preview</p>
-            <div className="flex items-center gap-3 rounded-xl bg-[#0F1013] px-3.5 py-3">
-              <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gold-gradient text-black font-bold text-xs">B</div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-white">{title || "BUMMPS"}</p>
-                <p className="text-xs text-ink-muted truncate">{message || "Your message will appear here..."}</p>
               </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-xs text-danger">
-              <HiOutlineExclamationCircle className="shrink-0 text-sm" />
-              {error}
+            {/* User ID */}
+
+            <AnimatePresence>
+              {target === "single" && (
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    height: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    height: "auto",
+                  }}
+                  exit={{
+                    opacity: 0,
+                    height: 0,
+                  }}
+                  className="overflow-hidden"
+                >
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                    User ID
+                  </label>
+
+                  <input
+                    type="text"
+                    value={userId}
+                    onChange={(e) =>
+                      setUserId(e.target.value)
+                    }
+                    placeholder="Enter user ID"
+                    className="w-full rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-ink-faint focus:border-gold/50"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Title */}
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                Notification Title
+              </label>
+
+              <input
+                type="text"
+                value={title}
+                onChange={(e) =>
+                  setTitle(e.target.value)
+                }
+                placeholder="e.g. Profile Verified"
+                className="w-full rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-ink-faint focus:border-gold/50"
+              />
             </div>
-          )}
 
-          <Button variant="primary" className="w-full" icon={HiOutlineSpeakerphone} onClick={handleSend} disabled={sending}>
-            {sending ? "Sending..." : target === "all" ? "Send to All Users" : "Send to User"}
-          </Button>
-        </div>
-      </Modal>
+            {/* Message */}
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                Message
+              </label>
+
+              <textarea
+                value={message}
+                onChange={(e) =>
+                  setMessage(e.target.value)
+                }
+                rows={4}
+                placeholder="Write your notification message..."
+                className="w-full resize-none rounded-2xl border border-gold/[0.16] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-ink-faint focus:border-gold/50"
+              />
+            </div>
+
+            {/* Preview */}
+
+            <div className="rounded-2xl border border-gold/[0.12] bg-white/[0.02] p-4">
+
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-faint">
+                  Push Preview
+                </p>
+
+                <HiOutlineBell className="text-sm text-gold" />
+              </div>
+
+              <div className="rounded-xl border border-white/5 bg-[#0F1013] p-4">
+
+                <div className="flex items-start gap-3">
+
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gold-gradient font-bold text-black">
+                    B
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-white">
+                      {title || "BUMMPS"}
+                    </p>
+
+                    <p className="mt-1 text-xs leading-relaxed text-ink-muted">
+                      {message ||
+                        "Your notification message will appear here..."}
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+            {/* Error */}
+
+            {error && (
+              <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-3 text-xs text-danger">
+                <HiOutlineExclamationCircle className="mt-0.5 shrink-0 text-sm" />
+
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Send */}
+
+            <Button
+              variant="primary"
+              className="w-full"
+              icon={HiOutlinePaperAirplane}
+              onClick={handleSend}
+              disabled={sending}
+            >
+              {sending
+                ? "Sending..."
+                : target === "all"
+                ? "Send to All Users"
+                : "Send to Specific User"}
+            </Button>
+
+          </div>
+        </Modal>
+
+      </div>
     </div>
   );
 }
