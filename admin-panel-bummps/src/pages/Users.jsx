@@ -35,7 +35,7 @@ const tabFilter = {
 
 const Card = ({ children, className = "" }) => (
   <div
-    className={`rounded-card border border-gold/[0.14] bg-card/70 shadow-soft backdrop-blur-xl ${className}`}
+    className={`rounded-card border border-gold/[0.14] bg-card/70 backdrop-blur-xl shadow-soft ${className}`}
   >
     {children}
   </div>
@@ -54,9 +54,7 @@ const StatCard = ({
     transition={{ delay }}
   >
     <Card className="group relative overflow-hidden p-5 transition duration-300 hover:-translate-y-1 hover:border-gold/30">
-      <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gold/[0.04] blur-3xl transition group-hover:bg-gold/[0.08]" />
-
-      <div className="relative flex items-start justify-between">
+      <div className="flex items-start justify-between">
         <div>
           <p className="text-xs font-medium text-ink-muted">{title}</p>
 
@@ -64,7 +62,9 @@ const StatCard = ({
             {value.toLocaleString()}
           </h2>
 
-          <p className="mt-2 text-[11px] text-ink-faint">{description}</p>
+          <p className="mt-2 text-[11px] text-ink-faint">
+            {description}
+          </p>
         </div>
 
         <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-gold/[0.14] bg-gold/[0.08] text-xl text-gold transition group-hover:bg-gold/15">
@@ -74,6 +74,35 @@ const StatCard = ({
     </Card>
   </motion.div>
 );
+
+// Detects a raw Mongo ObjectId string (24 hex chars) so we never
+// accidentally render an unpopulated reference id in the UI.
+const isObjectId = (val) =>
+  typeof val === "string" && /^[a-f\d]{24}$/i.test(val);
+
+// Safely resolves a human-readable plan name regardless of whether
+// `subscription.plan` comes back as a populated object, a plain string,
+// or a raw (unpopulated) ObjectId string from the backend.
+const resolvePlanName = (subscription) => {
+  const rawPlan = subscription?.plan;
+
+  if (rawPlan && typeof rawPlan === "object") {
+    // Populated plan object, e.g. { _id, name: "Premium" }
+    return rawPlan.name || rawPlan.title || "Premium";
+  }
+
+  if (rawPlan && !isObjectId(rawPlan)) {
+    // Plain string plan, e.g. "premium"
+    return rawPlan;
+  }
+
+  if (subscription?.isActive) {
+    // Active subscription but plan wasn't populated — safe fallback
+    return "Premium";
+  }
+
+  return "Free";
+};
 
 export default function Users() {
   const [tab, setTab] = useState("All Users");
@@ -87,6 +116,7 @@ export default function Users() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+
       const res = await getAllUsers();
       setUsers(res?.data?.users || []);
     } catch (err) {
@@ -104,7 +134,11 @@ export default function Users() {
   const countries = useMemo(
     () => [
       "All Countries",
-      ...new Set(users.map((u) => u.livingIn).filter(Boolean)),
+      ...new Set(
+        users
+          .map((u) => u.livingIn)
+          .filter(Boolean)
+      ),
     ],
     [users]
   );
@@ -123,8 +157,12 @@ export default function Users() {
     () => ({
       total: users.length,
       verified: users.filter((u) => u.isVerified).length,
-      premium: users.filter((u) => u.subscription?.isActive).length,
-      blocked: users.filter((u) => u.isDeactivated).length,
+      premium: users.filter(
+        (u) => u.subscription?.isActive
+      ).length,
+      blocked: users.filter(
+        (u) => u.isDeactivated
+      ).length,
     }),
     [users]
   );
@@ -139,7 +177,9 @@ export default function Users() {
 
         const name = String(u.name || "").toLowerCase();
         const email = String(u.email || "").toLowerCase();
-        const userId = String(u.userId || u.id || "").toLowerCase();
+        const userId = String(
+          u.userId || u.id || ""
+        ).toLowerCase();
 
         return (
           name.includes(query) ||
@@ -149,17 +189,30 @@ export default function Users() {
       })
       .filter(
         (u) =>
-          country === "All Countries" || u.livingIn === country
+          country === "All Countries" ||
+          u.livingIn === country
       )
       .filter((u) => {
         if (status === "All Status") return true;
-        if (status === "Active") return !u.isDeactivated;
-        if (status === "Blocked") return u.isDeactivated;
+
+        if (status === "Active") {
+          return !u.isDeactivated;
+        }
+
+        if (status === "Blocked") {
+          return u.isDeactivated;
+        }
+
         return true;
       })
       .sort((a, b) => {
-        const genderA = String(a.gender || "").toLowerCase();
-        const genderB = String(b.gender || "").toLowerCase();
+        const genderA = String(
+          a.gender || ""
+        ).toLowerCase();
+
+        const genderB = String(
+          b.gender || ""
+        ).toLowerCase();
 
         if (genderA !== genderB) {
           if (genderA === "male") return -1;
@@ -170,7 +223,13 @@ export default function Users() {
           String(b.name || "")
         );
       });
-  }, [users, tab, search, country, status]);
+  }, [
+    users,
+    tab,
+    search,
+    country,
+    status,
+  ]);
 
   const handleViewUser = async (user) => {
     try {
@@ -210,7 +269,10 @@ export default function Users() {
         <div className="flex items-center gap-3">
           <div className="relative shrink-0">
             <img
-              src={u.profilePic || "/default-avatar.png"}
+              src={
+                u.profilePic ||
+                "/default-avatar.png"
+              }
               alt={capitalize(u.name)}
               className="h-11 w-11 rounded-full object-cover ring-2 ring-gold/10"
             />
@@ -268,34 +330,20 @@ export default function Users() {
       key: "plan",
       header: "Plan",
       render: (u) => {
-        const rawPlan = u.subscription?.plan;
-
-        let planName = "Free";
-
-        if (typeof rawPlan === "object" && rawPlan !== null) {
-          planName =
-            rawPlan.name ||
-            rawPlan.title ||
-            rawPlan.planName ||
-            "Free";
-        } else if (typeof rawPlan === "string") {
-          const isMongoId = /^[a-f\d]{24}$/i.test(rawPlan);
-          planName = isMongoId ? "Free" : rawPlan;
-        }
-
-        const isPremium =
-          Boolean(u.subscription?.isActive) &&
-          !/^[a-f\d]{24}$/i.test(String(rawPlan || ""));
+        const planName = resolvePlanName(u.subscription);
 
         return (
           <span
             className={`inline-flex items-center gap-1 rounded-pill border px-2.5 py-1 text-[10px] font-semibold ${
-              isPremium
+              u.subscription?.isActive
                 ? "border-gold/20 bg-gold/10 text-gold"
                 : "border-white/10 bg-white/[0.03] text-ink-muted"
             }`}
           >
-            {isPremium && <HiOutlineStar className="text-xs" />}
+            {u.subscription?.isActive && (
+              <HiOutlineStar />
+            )}
+
             {capitalize(planName)}
           </span>
         );
@@ -305,8 +353,16 @@ export default function Users() {
       key: "status",
       header: "Verification",
       render: (u) => (
-        <Badge tone={u.isVerified ? "success" : "warning"}>
-          {u.isVerified ? "Verified" : "Unverified"}
+        <Badge
+          tone={
+            u.isVerified
+              ? "success"
+              : "warning"
+          }
+        >
+          {u.isVerified
+            ? "Verified"
+            : "Unverified"}
         </Badge>
       ),
     },
@@ -315,10 +371,16 @@ export default function Users() {
       header: "Account",
       render: (u) => (
         <Badge
-          tone={u.isDeactivated ? "danger" : "success"}
+          tone={
+            u.isDeactivated
+              ? "danger"
+              : "success"
+          }
           dot
         >
-          {u.isDeactivated ? "Blocked" : "Active"}
+          {u.isDeactivated
+            ? "Blocked"
+            : "Active"}
         </Badge>
       ),
     },
@@ -345,7 +407,11 @@ export default function Users() {
 
           <button
             onClick={() => handleToggleUser(u)}
-            title={u.isDeactivated ? "Activate User" : "Block User"}
+            title={
+              u.isDeactivated
+                ? "Activate User"
+                : "Block User"
+            }
             className={`grid h-8 w-8 place-items-center rounded-full border bg-white/[0.02] transition-all hover:scale-110 ${
               u.isDeactivated
                 ? "border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10"
@@ -367,13 +433,17 @@ export default function Users() {
     <div className="px-4 pb-4 pt-0 text-white sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
         <motion.div
-          initial={{ opacity: 0, y: -15 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{
+            opacity: 0,
+            y: -15,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
           className="relative overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 p-6 shadow-soft backdrop-blur-xl sm:p-8"
         >
-          <div className="absolute -right-20 -top-20 h-52 w-52 rounded-full bg-gold/[0.05] blur-3xl" />
-
-          <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]" />
@@ -392,8 +462,7 @@ export default function Users() {
               </h1>
 
               <p className="mt-2 max-w-xl text-sm text-ink-muted">
-                Manage, verify, moderate and monitor every member
-                on the BUMMPS platform.
+                Manage, verify, moderate and monitor every member on the BUMMPS platform.
               </p>
             </div>
 
@@ -526,8 +595,7 @@ export default function Users() {
                 </h3>
 
                 <p className="mt-1 max-w-sm text-xs text-ink-muted">
-                  Try changing your search query or filters to
-                  find users.
+                  Try changing your search query or filters to find users.
                 </p>
               </div>
             ) : (

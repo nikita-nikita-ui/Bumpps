@@ -154,12 +154,11 @@ const dashboardData = {
 
 const Card = ({ children, className = "" }) => (
   <div
-    className={`rounded-card border border-gold/[0.14] bg-card/70 backdrop-blur-xl shadow-soft ${className}`}
+    className={`rounded-card border border-gold/[0.14] bg-card shadow-soft ${className}`}
   >
     {children}
   </div>
 );
-
 const Badge = ({ children, type = "gold" }) => {
   const styles = {
     gold: "bg-gold/10 text-gold border-gold/20",
@@ -205,7 +204,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-card border border-gold/[0.14] bg-card/70 p-6 shadow-soft backdrop-blur-xl sm:p-8"
+         className="relative overflow-hidden rounded-card border border-gold/[0.14] bg-card p-6 shadow-soft sm:p-8"
         >
           <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
             <div>

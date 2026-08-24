@@ -1,16 +1,28 @@
 import { useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 
-export default function DataTable({ columns, data, pageSize = 8, rowKey = "id" }) {
+export default function DataTable({
+  columns,
+  data = [],
+  pageSize = 8,
+  rowKey = "id",
+}) {
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(data.length / pageSize)
+  );
+
   const paged = useMemo(() => {
     const start = (page - 1) * pageSize;
     return data.slice(start, start + pageSize);
   }, [data, page, pageSize]);
 
-  const goto = (p) => setPage(Math.min(Math.max(1, p), totalPages));
+  const goto = (p) => {
+    setPage(Math.min(Math.max(1, p), totalPages));
+  };
 
   return (
     <div>
@@ -19,33 +31,55 @@ export default function DataTable({ columns, data, pageSize = 8, rowKey = "id" }
           <thead>
             <tr className="border-b border-gold/[0.10] bg-white/[0.02]">
               {columns.map((col) => (
-                <th key={col.key} className="px-4 py-3.5 text-left text-[11px] font-bold uppercase tracking-widest text-ink-muted">
+                <th
+                  key={col.key}
+                  className="px-4 py-3.5 text-left text-[11px] font-bold uppercase tracking-widest text-ink-muted"
+                >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
+
           <tbody>
-            <AnimatePresence mode="wait">
-              {paged.map((row, i) => (
+            {paged.map((row, i) => {
+              const key =
+                row?.[rowKey] ??
+                row?.id ??
+                row?._id ??
+                `row-${(page - 1) * pageSize + i}`;
+
+              return (
                 <motion.tr
-                  key={row[rowKey]}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.03 }}
+                  key={String(key)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{
+                    duration: 0.2,
+                    delay: i * 0.02,
+                  }}
                   className="border-b border-white/[0.04] transition-colors duration-200 hover:bg-gold/[0.04]"
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3.5 align-middle text-ink-muted">
-                      {col.render ? col.render(row) : row[col.key]}
+                    <td
+                      key={col.key}
+                      className="px-4 py-3.5 align-middle text-ink-muted"
+                    >
+                      {col.render
+                        ? col.render(row)
+                        : row?.[col.key] ?? "-"}
                     </td>
                   ))}
                 </motion.tr>
-              ))}
-            </AnimatePresence>
+              );
+            })}
+
             {paged.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-ink-faint">
+                <td
+                  colSpan={columns.length}
+                  className="px-4 py-12 text-center text-ink-faint"
+                >
                   No records found.
                 </td>
               </tr>
@@ -59,29 +93,36 @@ export default function DataTable({ columns, data, pageSize = 8, rowKey = "id" }
           <span>
             Page {page} of {totalPages} · {data.length} records
           </span>
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => goto(page - 1)}
               disabled={page === 1}
-              className="grid h-8 w-8 place-items-center rounded-full border border-gold/20 text-ink-muted transition-all hover:border-gold hover:text-gold disabled:opacity-30 disabled:hover:border-gold/20 disabled:hover:text-ink-muted"
+              className="grid h-8 w-8 place-items-center rounded-full border border-gold/20 text-ink-muted transition-all hover:border-gold hover:text-gold disabled:opacity-30"
             >
               <HiChevronLeft />
             </button>
-            {Array.from({ length: totalPages }).slice(0, 5).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => goto(i + 1)}
-                className={`grid h-8 w-8 place-items-center rounded-full text-xs font-semibold transition-all ${
-                  page === i + 1 ? "bg-gold-gradient text-black shadow-[0_4px_16px_rgba(218,178,90,0.4)]" : "border border-white/10 text-ink-muted hover:border-gold/40 hover:text-white"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+
+            {Array.from({ length: totalPages })
+              .slice(0, 5)
+              .map((_, i) => (
+                <button
+                  key={`page-${i + 1}`}
+                  onClick={() => goto(i + 1)}
+                  className={`grid h-8 w-8 place-items-center rounded-full text-xs font-semibold transition-all ${
+                    page === i + 1
+                      ? "bg-gold-gradient text-black shadow-[0_4px_16px_rgba(218,178,90,0.4)]"
+                      : "border border-white/10 text-ink-muted hover:border-gold/40 hover:text-white"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
             <button
               onClick={() => goto(page + 1)}
               disabled={page === totalPages}
-              className="grid h-8 w-8 place-items-center rounded-full border border-gold/20 text-ink-muted transition-all hover:border-gold hover:text-gold disabled:opacity-30 disabled:hover:border-gold/20 disabled:hover:text-ink-muted"
+              className="grid h-8 w-8 place-items-center rounded-full border border-gold/20 text-ink-muted transition-all hover:border-gold hover:text-gold disabled:opacity-30"
             >
               <HiChevronRight />
             </button>
