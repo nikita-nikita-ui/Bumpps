@@ -36,6 +36,16 @@ const emptyForm = {
   features: [],
 };
 
+const displayPlanName = (plan) => {
+  const monthlyPrice = Number(plan?.prices?.monthly || 0);
+
+  if (monthlyPrice === 10) return "Bummps";
+  if (monthlyPrice === 20) return "Bummps +";
+  if (monthlyPrice === 30) return "Bummps Pro";
+
+  return plan?.name || "Plan";
+};
+
 const StatCard = ({
   title,
   value,
@@ -128,7 +138,7 @@ export default function Subscriptions() {
       .filter(
         (plan) =>
           !value ||
-          plan.name?.toLowerCase().includes(value) ||
+          displayPlanName(plan).toLowerCase().includes(value) ||
           plan.subtitle?.toLowerCase().includes(value)
       );
   }, [plans, tab, search]);
@@ -672,7 +682,7 @@ export default function Subscriptions() {
 
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-white">
-                              {plan.name}
+                              {displayPlanName(plan)}
                             </p>
 
                             <p className="mt-0.5 max-w-[150px] truncate text-[11px] text-ink-faint">
@@ -847,7 +857,7 @@ export default function Subscriptions() {
             setError("");
           }
         }}
-        title={`Edit ${editing?.name || "Plan"}`}
+        title={`Edit ${displayPlanName(editing)}`}
         maxWidth="max-w-lg"
       >
         {renderForm(true)}
@@ -875,7 +885,7 @@ export default function Subscriptions() {
           <p className="mt-2 text-xs leading-5 text-ink-muted">
             Are you sure you want to delete{" "}
             <span className="font-semibold text-white">
-              {deleting?.name}
+              {displayPlanName(deleting)}
             </span>
             ? This action cannot be undone.
           </p>
